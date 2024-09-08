@@ -30,15 +30,20 @@ _sprite_hint()
 
 from utils.ui.base_ui_elements import BaseUiElements, UiSprite
 from utils.ui.textsprite import TextSprite
-from utils.helpers import rotate_around_pivot_accurate, copysign
+from utils.helpers import rotate_around_pivot_accurate, sign
 from utils.particle_effects import ParticleEffect, Particle
 from utils.my_timer import Timer
 import utils.interpolation as interpolation
 import utils.tween_module as TweenModule
 
 from game.test_player import TestPlayer
+from game.player import Player
+from game.bullet import Bullet
 
 TestPlayer()
+Player()
+for _ in range(10):
+    Bullet()
 
 core.settings.set_defualt({'Brightness' : 0})
 core.settings.load()

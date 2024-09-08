@@ -46,14 +46,18 @@ class Game:
         self.game_data = {}
         self.make_connections()
 
-        player : TestPlayer = TestPlayer.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)))
+        player : Player = Player.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)))
         #Setup varaibles
 
     def make_connections(self):
         core_object.event_manager.bind(pygame.KEYDOWN, self.handle_key_event)
 
+        game.player.make_connections()
+
     def remove_connections(self):
         core_object.event_manager.unbind(pygame.KEYDOWN, self.handle_key_event)
+
+        game.player.remove_connections()
 
     def handle_key_event(self, event : pygame.Event):
         if event.type == pygame.KEYDOWN:
@@ -119,10 +123,15 @@ class Game:
         from core.core import core_object
 
         #runtime imports for game classes
-        global game, TestPlayer      
+        global game
+
+        global TestPlayer      
         import game.test_player
         from game.test_player import TestPlayer
 
+        global Player
+        import game.player
+        from game.player import Player
 
         
     
