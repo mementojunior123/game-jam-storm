@@ -70,8 +70,12 @@ class Player(Sprite):
     
     def is_alive(self) -> bool:
         return (self.hp > 0)
+    
+    def can_take_damage(self):
+        return True
 
     def take_damage(self, damage : int):
+        if not self.can_take_damage(): return
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
