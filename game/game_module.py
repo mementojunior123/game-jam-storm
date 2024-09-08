@@ -11,7 +11,7 @@ from utils.ui.base_ui_elements import BaseUiElements
 import utils.interpolation as interpolation
 from utils.my_timer import Timer
 from game.sprite import Sprite
-from utils.helpers import average, random_float
+from utils.helpers import average, random_float, Union
 from utils.ui.brightness_overlay import BrightnessOverlay
 
 class GameStates:
@@ -36,6 +36,11 @@ class Game:
         self.game_timer : Timer|None = None
         self.game_data : dict|None = {}
 
+        self.player : Union['Player', None] = None
+        self.enemies : list['Enemy']|None = None
+
+        self.enemy_timer : Timer|None = None
+
         
 
     def start_game(self):
@@ -46,8 +51,12 @@ class Game:
         self.game_data = {}
         self.make_connections()
 
-        player : Player = Player.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)))
+        #spawns
+        self.player = Player.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)))
+        self.enemies = Enemy.active_elements
         #Setup varaibles
+        self.enemy_timer = Timer(3, time_source=self.game_timer.get_time)
+        self.enemy_timer.start_time -= 2.5
 
     def make_connections(self):
         core_object.event_manager.bind(pygame.KEYDOWN, self.handle_key_event)
@@ -68,7 +77,15 @@ class Game:
                     self.pause()
 
     def main_logic(self, delta : float):
-        pass
+        if not self.player.is_alive():
+            self.fire_gameover_event()
+            return
+        if self.enemy_timer.isover():
+            self.enemy_timer.restart()
+            self.spawn_enemy()
+
+    def spawn_enemy(self):
+        Enemy.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)), 5, 5)
     
     def pause(self):
         if not self.active: return
@@ -111,11 +128,14 @@ class Game:
         self.game_timer = None
         self.game_data.clear()
 
+        
+
         #Cleanup ingame object
         Sprite.kill_all_sprites()
 
         #Clear game varaibles
-         
+        self.player = None
+        self.enemies = None
 
    
     def init(self):
@@ -132,6 +152,14 @@ class Game:
         global Player
         import game.player
         from game.player import Player
+
+        global Enemy
+        import game.enemy
+        from game.enemy import Enemy
+
+        global Bullet
+        import game.bullet
+        from game.bullet import Bullet
 
         
     

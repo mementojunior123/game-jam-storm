@@ -39,11 +39,15 @@ import utils.tween_module as TweenModule
 from game.test_player import TestPlayer
 from game.player import Player
 from game.bullet import Bullet
+from game.enemy import Enemy
 
 TestPlayer()
 Player()
 for _ in range(10):
     Bullet()
+
+for _ in range(5):
+    Enemy()
 
 core.settings.set_defualt({'Brightness' : 0})
 core.settings.load()

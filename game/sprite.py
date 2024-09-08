@@ -3,6 +3,8 @@ from utils.animation import AnimationTrack, Animation
 from typing import Any
 from utils.helpers import is_sorted
 from utils.pivot_2d import Pivot2D
+from inspect import isclass
+
 class Sprite:
     '''Base class for all game objects.'''
     active_elements : list['Sprite'] = []
@@ -14,12 +16,27 @@ class Sprite:
     def __init__(self) -> None:
         self._position : pygame.Vector2
         self.pivot : Pivot2D|None = None
-        self.image : pygame.Surface
+        self._image : pygame.Surface
         self.rect : pygame.Rect
         self.mask : pygame.Mask
+        self.dynamic_mask : bool = False
         self.zindex : int
         self.animation_tracks : dict[str, AnimationTrack]
         Sprite.inactive_elements.append(self)
+        self._zombie : bool = False
+    
+    @property
+    def image(self) -> pygame.Surface:
+        return self._image
+    
+    @image.setter
+    def image(self, new_surf : pygame.Surface):
+        self._image = new_surf
+        if self.dynamic_mask:
+            if new_surf is None:
+                self.mask = None
+            else:
+                self.mask = pygame.mask.from_surface(new_surf)
     
     def align_rect(self):
         self.rect.center = round(self.true_position)
@@ -150,6 +167,9 @@ class Sprite:
         self.clean_instance()
         self.self_destruct()
     
+    def kill_instance_safe(self):
+        self._zombie = True
+    
     @classmethod
     def clean_all_instances(cls):
         for element in cls.active_elements:
@@ -182,18 +202,30 @@ class Sprite:
     def self_destruct(self):
         cls = self.__class__
         cls.pool(self)
+    
+    @staticmethod
+    def clear_zombies(elements : list['Sprite']):
+        to_kill : list[Sprite] = []
+        for element in elements:
+            if element._zombie:
+                element._zombie = False
+                to_kill.append(element)
+        for element in to_kill:
+            element.kill_instance()
 
     @classmethod
     def update_all(cls, delta : float):
         element : cls
         for element in cls.active_elements:
             element.update(delta)
+        Sprite.clear_zombies(cls.active_elements)
     
     @classmethod
     def update_all_sprites(cls, delta : float):
         element : Sprite
         for element in Sprite.active_elements:
             element.update(delta)
+        Sprite.clear_zombies(Sprite.active_elements)
     
     @classmethod
     def update_all_registered_classes(cls, delta : float):
@@ -236,47 +268,64 @@ class Sprite:
     def y(self, value):
         self.position.y = value
 
-    def get_colliding(self, collision_group : list['Sprite'], reqs : dict[str,Any] = None):
-        if reqs is None: reqs = {}
+
+    def is_colliding(self, other : 'Sprite'):
+        if not self.rect.colliderect(other.rect): return False
+        if self.mask.overlap(other.mask,(other.rect.x - self.rect.x ,other.rect.y - self.rect.y)): return True
+        return False
+
+    def is_collding_rect(self, other : 'Sprite'):
+        return self.rect.colliderect(other.rect)
+
+    def get_colliding(self, collision_groups : list[list['Sprite']]):
         '''Returns the first sprite colliding this sprite within collision_group or None if there arent any. Uses mask collision.'''
-        for cls in collision_group:
-            for element in cls.active_elements:
-                if not self.rect.colliderect(element.rect): continue
-                if self.mask.overlap(element.mask,(element.rect.x - self.rect.x ,element.rect.y - self.rect.y)):
-                    has_reqs = True
-                    for req in reqs:
-                        if not hasattr(self, req): 
-                            has_reqs = False
-                        if getattr(self, req) != reqs[req]: 
-                            has_reqs = False
-                    if has_reqs == False: continue
-                    return element
-        
+        try:
+            collision_groups[0]
+        except TypeError:
+            collision_groups = [collision_groups]
+        for collision_group in collision_groups:
+            actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
+            for element in actual_group:
+                if self.is_colliding(element): return element     
         return None
     
-    def get_rect_colliding(self, collision_group : list['Sprite']):
+    def get_rect_colliding(self, collision_groups : list[list['Sprite']]):
         '''Returns the first sprite colliding this sprite within collision_group or None if there arent any. Uses a bounding box check.'''
-        for cls in collision_group:
-            for element in cls.active_elements:
-                if self.rect.colliderect(element.rect): return element
+        try:
+            collision_groups[0]
+        except TypeError:
+            collision_groups = [collision_groups]
+        for collision_group in collision_groups:
+            actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
+            for element in actual_group:
+                if self.is_collding_rect(element): return element
         return None
     
-    def get_all_colliding(self, collision_group : list['Sprite']) -> list['Sprite']:
+    def get_all_colliding(self, collision_groups : list[list['Sprite']]) -> list['Sprite']:
         '''Returns all entities colliding this sprite within collision_group. Uses mask collision.'''
+        try:
+            collision_groups[0]
+        except TypeError:
+            collision_groups = [collision_groups]
         return_val = []
-        for cls in collision_group:
-            for element in cls.active_elements:
-                if not self.rect.colliderect(element.rect): continue
-                if self.mask.overlap(element.mask,(element.rect.x - self.rect.x ,element.rect.y - self.rect.y)): 
+        for collision_group in collision_groups:
+            actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
+            for element in actual_group:
+                if self.is_colliding(element):
                     return_val.append(element)
         return return_val
 
-    def get_all_rect_colliding(self, collision_group : list['Sprite']):
+    def get_all_rect_colliding(self, collision_groups : list[list['Sprite']]):
         '''Returns all entities colliding this sprite within collision_group. Uses a bounding box check.'''
+        try:
+            collision_groups[0]
+        except TypeError:
+            collision_groups = [collision_groups]
         return_val = []
-        for cls in collision_group:
-            for element in cls.active_elements:
-                if self.rect.colliderect(element.rect): return_val.append(element)
+        for collision_group in collision_groups:
+            actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
+            for element in actual_group:
+                if self.is_collding_rect(element): return_val.append(element)
         return return_val
 
     def on_collision(self, other : 'Sprite'):
