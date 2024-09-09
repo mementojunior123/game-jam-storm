@@ -7,6 +7,7 @@ from utils.pivot_2d import Pivot2D
 
 from game.bullet import Bullet
 from game.enemy import Enemy
+from utils.ui.ui_sprite import UiSprite
 
 class Player(Sprite):
     active_elements : list['Player'] = []
@@ -17,10 +18,15 @@ class Player(Sprite):
     test_image.fill([0, 0, 255])
     pygame.draw.circle(test_image, "Green", (25, 25), 25)
 
+    ui_heart_image : pygame.Surface = pygame.image.load("assets/graphics/ui/heart_green_colorkey.png")
+    ui_heart_image.set_colorkey([0, 255, 0])
+    ui_heart_image = pygame.transform.scale_by(ui_heart_image, 0.1)
+
     def __init__(self) -> None:
         super().__init__()
         self.max_hp : int
         self.hp : int
+        self.ui_hearts : list[UiSprite] = []
         self.dynamic_mask = True
         Player.inactive_elements.append(self)
 
@@ -39,7 +45,7 @@ class Player(Sprite):
 
         element.hp = 3
         element.max_hp = 3
-
+        element.update_ui_hearts()
         cls.unpool(element)
         return element
     
@@ -79,11 +85,31 @@ class Player(Sprite):
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
+        self.update_ui_hearts()
     
     def shoot(self):
         player_to_mouse_vector = pygame.Vector2(pygame.mouse.get_pos()) - self.position
         shot_direction = player_to_mouse_vector.normalize()
         Bullet.spawn(self.position, 7, shot_direction)
+    
+    def new_ui_heart(self, index : int):
+        x_pos = 950 - index * 60
+        new_sprite = UiSprite(Player.ui_heart_image, Player.ui_heart_image.get_rect(), 0, f'heart{index}', colorkey=[0, 255, 0])
+        new_sprite.rect.top = 15
+        new_sprite.rect.right = x_pos
+        return new_sprite
+    
+    def update_ui_hearts(self):
+        self.clear_ui_hearts()
+        if self.hp > 0:
+            self.ui_hearts = [self.new_ui_heart(i) for i in range(self.hp)]
+            for heart in self.ui_hearts: core_object.main_ui.add(heart)
+    
+    def clear_ui_hearts(self):
+        for ui_sprite in self.ui_hearts:
+            core_object.main_ui.remove(ui_sprite)
+        self.ui_hearts.clear()
+
     
     def handle_key_event(self, event : pygame.Event):
         if event.key == pygame.K_SPACE:
@@ -103,6 +129,7 @@ class Player(Sprite):
 
         self.hp = None
         self.max_hp = None
+        self.clear_ui_hearts()
     
 
 Sprite.register_class(Player)
