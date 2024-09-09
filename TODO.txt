@@ -7,6 +7,8 @@ Each time you do the preparation, you get better because of either experience, s
 
 Priority list
 -----Necessary-----
+-Add a token based perma-upgrade system.
+-Figure out what the prep section is going to be.
 -------High--------
 ------Medium-------
 -------Low---------

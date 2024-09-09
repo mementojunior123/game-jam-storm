@@ -117,6 +117,8 @@ class Player(Sprite):
 
     @classmethod
     def receive_key_event(cls, event : pygame.Event):
+        if core_object.game.state == core_object.game.STATES.paused: return
+        if core_object.game.state == core_object.game.STATES.transition: return
         for element in cls.active_elements:
             element.handle_key_event(event)
     
