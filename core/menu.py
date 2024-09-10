@@ -110,8 +110,7 @@ class BaseMenu:
         stage_data = self.stage_data[self.stage]
         match self.stage:
             case 1:
-                if name == "play_button":
-                    self.stage = 2
+                pass
                    
     
     def handle_mouse_event(self, event : pygame.Event):
@@ -127,8 +126,16 @@ class Menu(BaseMenu):
     def init(self):
         self.bg_color = (94, 129, 162)
         self.stage = 1
-        self.stage_data : list[dict] = [None, {}]
-        self.stages = [None, []]
+        self.stage_data : list[dict] = [None, {}, {}]
+        window_size = core_object.main_display.get_size()
+        centerx = window_size[0] // 2
+
+        self.stages = [None, 
+        [BaseUiElements.new_text_sprite('StormZ Day', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 50)),
+        BaseUiElements.new_button('BlueButton', 'Play', 1, 'midbottom', (centerx, window_size[1] - 15), (0.5, 1.4), 
+        {'name' : 'play_button'}, (Menu.font_40, 'Black', False))], #stage 1
+        [BaseUiElements.new_text_sprite('Upgrades', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 50)),]
+        ]
     
     
     def update(self, delta : float):
@@ -136,7 +143,8 @@ class Menu(BaseMenu):
         match self.stage:
             case 1:
                 pass
-        return None
+            case 2:
+                pass
     
     def handle_tag_event(self, event : pygame.Event):
         if event.type != UiSprite.TAG_EVENT:
