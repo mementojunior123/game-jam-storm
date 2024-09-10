@@ -1,4 +1,5 @@
 import pygame
+from utils.helpers import ColorType
 import random
 from utils.ui.ui_sprite import UiSprite
 from utils.ui.textsprite import TextSprite
@@ -8,7 +9,8 @@ import utils.interpolation as interpolation
 from utils.my_timer import Timer
 from utils.ui.brightness_overlay import BrightnessOverlay
 from math import floor
-class Menu:
+
+class BaseMenu:
     font_40 = pygame.font.Font(r'assets/fonts/Pixeltype.ttf', 40)
     font_50 = pygame.font.Font(r'assets/fonts/Pixeltype.ttf', 50)
     font_60 = pygame.font.Font(r'assets/fonts/Pixeltype.ttf', 60)
@@ -18,22 +20,13 @@ class Menu:
     def __init__(self) -> None:
         self.stage : int
         self.stages : list[list[UiSprite]]
-        self.bg_color = (94, 129, 162)
+        self.bg_color : ColorType|str
         
     def init(self):
-
-        window_size = core_object.main_display.get_size()
-        centerx = window_size[0] // 2
-
-        self.stage = 1
-        
-        self.stage_data : list[dict] = [None, {}]
-        self.stages = [None, 
-        [BaseUiElements.new_text_sprite('StormZ Day', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 50)),
-        BaseUiElements.new_button('BlueButton', 'Play', 1, 'midbottom', (centerx, window_size[1] - 15), (0.5, 1.4), 
-        {'name' : 'play_button'}, (Menu.font_40, 'Black', False))], #stage 1
-        ]
         self.bg_color = (94, 129, 162)
+        self.stage = 1
+        self.stage_data : list[dict] = [None, {}]
+        self.stages = [None, []]
     
     def add_connections(self):
         core_object.event_manager.bind(pygame.MOUSEBUTTONDOWN, self.handle_mouse_event)
@@ -118,7 +111,7 @@ class Menu:
         match self.stage:
             case 1:
                 if name == "play_button":
-                    pygame.event.post(pygame.Event(core_object.START_GAME, {}))
+                    self.stage = 2
                    
     
     def handle_mouse_event(self, event : pygame.Event):
@@ -129,3 +122,31 @@ class Menu:
                 if type(sprite) != UiSprite: continue
                 if sprite.rect.collidepoint(mouse_pos):
                     sprite.on_click()
+
+class Menu(BaseMenu):     
+    def init(self):
+        self.bg_color = (94, 129, 162)
+        self.stage = 1
+        self.stage_data : list[dict] = [None, {}]
+        self.stages = [None, []]
+    
+    
+    def update(self, delta : float):
+        stage_data = self.stage_data[self.stage]
+        match self.stage:
+            case 1:
+                pass
+        return None
+    
+    def handle_tag_event(self, event : pygame.Event):
+        if event.type != UiSprite.TAG_EVENT:
+            return
+        tag : int = event.tag
+        name : str = event.name
+        trigger_type : str = event.trigger_type
+        stage_data = self.stage_data[self.stage]
+        match self.stage:
+            case 1:
+                if name == "play_button":
+                    self.launch_game()
+                   
