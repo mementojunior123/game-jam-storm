@@ -32,6 +32,7 @@ class BaseProjectile(Sprite):
         super().__init__()
         self.velocity : pygame.Vector2
         self.team : str
+        self.damage : float|int
         BaseProjectile.inactive_elements.append(self)
     
     @classmethod
@@ -68,8 +69,10 @@ class BaseProjectile(Sprite):
 
     
     @classmethod
-    def spawn(cls, pos : pygame.Vector2, speed : float, direction : pygame.Vector2, team : str = 'Friendly'):
+    def spawn(cls, pos : pygame.Vector2, speed : float, direction : pygame.Vector2, team : str = 'Friendly',
+              damage : float|int = 1):
         element = cls.inactive_elements[0]
+        cls.unpool(element)
 
         element.image = cls.test_image if random.randint(0, 1) else cls.test_image2
         element.mask = pygame.mask.from_surface(element.image)
@@ -83,7 +86,9 @@ class BaseProjectile(Sprite):
         element.velocity = direction * speed
         element.team = team
         element.align_rect()
-        cls.unpool(element)
+
+        element.damage = damage
+        
         return element
     
     def is_hostile(self, other_team : str = 'Friendly'):
@@ -109,5 +114,7 @@ class BaseProjectile(Sprite):
         self.zindex = None
 
         self.velocity = None
+        self.damage = None
+        self.team = None
     
 Sprite.register_class(BaseProjectile)

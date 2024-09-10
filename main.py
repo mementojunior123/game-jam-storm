@@ -43,7 +43,7 @@ from game.enemy import Zombie
 
 TestPlayer()
 Player()
-for _ in range(25):
+for _ in range(99):
     BaseProjectile()
 
 for _ in range(90):

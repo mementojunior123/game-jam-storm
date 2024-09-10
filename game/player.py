@@ -9,6 +9,9 @@ from game.projectiles import BaseProjectile
 from game.enemy import Zombie
 from utils.ui.ui_sprite import UiSprite
 from utils.my_timer import Timer
+from dataclasses import dataclass
+from game.weapons import FiringModes, WeaponStats, WeaponBuff, WeaponBuffTypes, WEAPONS
+
 
 class Player(Sprite):
     active_elements : list['Player'] = []
@@ -32,6 +35,7 @@ class Player(Sprite):
         self.ui_hearts : list[UiSprite] = []
 
         self.shot_cooldown : Timer|None
+        self.weapon : WeaponStats
         self.dynamic_mask = True
         Player.inactive_elements.append(self)
 
@@ -53,7 +57,9 @@ class Player(Sprite):
         element.max_hp = 3
         element.update_ui_hearts()
 
-        element.shot_cooldown = Timer(0.35, core_object.game.game_timer.get_time)
+        element.weapon = WEAPONS['normal']
+        element.weapon.reset()
+        element.shot_cooldown = Timer(element.weapon.firerate, core_object.game.game_timer.get_time)
         
         return element
     
@@ -64,7 +70,7 @@ class Player(Sprite):
         self.do_collisions()
     
     def input_action(self):
-        if (pygame.key.get_pressed())[pygame.K_SPACE]:
+        if (pygame.key.get_pressed())[pygame.K_SPACE] and (self.weapon.fire_mode == FiringModes.auto):
             self.shoot()
     
     def do_movement(self, delta : float):
@@ -108,8 +114,8 @@ class Player(Sprite):
         if not self.shot_cooldown.isover(): return
         player_to_mouse_vector = pygame.Vector2(pygame.mouse.get_pos()) - self.position
         shot_direction = player_to_mouse_vector.normalize()
-        BaseProjectile.spawn(self.position, 7, shot_direction, BaseProjectile.TEAMS.friendly)
-        self.shot_cooldown.restart()
+        BaseProjectile.spawn(self.position, 7, shot_direction, BaseProjectile.TEAMS.friendly, self.weapon.damage)
+        self.shot_cooldown.set_duration(self.weapon.firerate)
     
     def new_ui_heart(self, index : int):
         x_pos = 950 - index * 60
@@ -163,6 +169,7 @@ class Player(Sprite):
         self.max_hp = None
         self.clear_ui_hearts()
         self.shot_cooldown = None
+        self.weapon = None
     
 
 Sprite.register_class(Player)

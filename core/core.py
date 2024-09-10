@@ -11,6 +11,7 @@ from core.ui import Ui
 from core.menu import Menu
 import core.menu
 from game.game_module import Game
+from core.game_storage import GameStorage
 from core.task_scheduler import TaskScheduler
 from utils.tween_module import TweenTrack, TweenChain
 from utils.animation import AnimationTrack
@@ -44,6 +45,7 @@ class Core:
         self.main_ui = Ui()
         self.menu = Menu()
         self.game = Game()
+        self.storage = GameStorage()
         self.task_scheduler = TaskScheduler()
         self.delta_stream : deque[float] = deque([1 for _ in range(30)])
         self.dirty_display_rects : list[pygame.Rect] = []

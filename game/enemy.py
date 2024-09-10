@@ -54,9 +54,9 @@ class Zombie(Sprite):
         for bullet in bullets:
             if not isinstance(bullet, BaseProjectile): continue
             if not bullet.is_hostile(bullet.TEAMS.enemy): continue
+            alive : bool = self.take_damage(bullet.damage)
             bullet.kill_instance()
-            alive : bool = self.take_damage(1)
-            if not alive: return
+            if not alive: break
     
     def take_damage(self, damage : int) -> bool:
         self.hp -= damage
@@ -66,7 +66,7 @@ class Zombie(Sprite):
         return True
     
     def die(self):
-        self.kill_instance()
+        self.kill_instance_safe()
         
 
     def clean_instance(self):
