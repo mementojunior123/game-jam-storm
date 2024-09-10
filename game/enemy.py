@@ -2,11 +2,11 @@ import pygame
 from game.sprite import Sprite
 from core.core import core_object
 from utils.pivot_2d import Pivot2D
-from game.bullet import Bullet
+from game.projectiles import BaseProjectile
 
-class Enemy(Sprite):
-    inactive_elements : list["Enemy"] = []
-    active_elements : list['Enemy'] = []
+class Zombie(Sprite):
+    inactive_elements : list["Zombie"] = []
+    active_elements : list['Zombie'] = []
 
     test_image : pygame.Surface = pygame.surface.Surface((50, 50))
     test_image.set_colorkey([0, 0, 255])
@@ -19,7 +19,7 @@ class Enemy(Sprite):
         self.speed : float
         self.max_hp : int
         self.hp : int
-        Enemy.inactive_elements.append(self)
+        Zombie.inactive_elements.append(self)
     
     @classmethod
     def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3):
@@ -49,9 +49,10 @@ class Enemy(Sprite):
         self.do_collisions()
     
     def do_collisions(self):
-        bullets : list[Bullet] = self.get_all_colliding([Bullet.active_elements])
+        bullets : list[BaseProjectile] = self.get_all_colliding([BaseProjectile.active_elements])
         for bullet in bullets:
-            if not isinstance(bullet, Bullet): continue
+            if not isinstance(bullet, BaseProjectile): continue
+            if not bullet.is_hostile(bullet.TEAMS.enemy): continue
             bullet.kill_instance()
             alive : bool = self.take_damage(1)
             if not alive: return
@@ -78,3 +79,13 @@ class Enemy(Sprite):
         self.speed = None
         self.max_hp = None
         self.hp = None
+
+Sprite.register_class(Zombie)
+
+class ZombieTypes:
+    zombie_dict = {'normal' : Zombie}
+    normal = 'normal'
+
+    @staticmethod
+    def convert(ztype : str):
+        return ZombieTypes.zombie_dict[ztype]

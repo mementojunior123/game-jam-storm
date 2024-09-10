@@ -5,9 +5,10 @@ from core.core import core_object
 from utils.animation import Animation
 from utils.pivot_2d import Pivot2D
 
-from game.bullet import Bullet
-from game.enemy import Enemy
+from game.projectiles import BaseProjectile
+from game.enemy import Zombie
 from utils.ui.ui_sprite import UiSprite
+from utils.my_timer import Timer
 
 class Player(Sprite):
     active_elements : list['Player'] = []
@@ -27,12 +28,15 @@ class Player(Sprite):
         self.max_hp : int
         self.hp : int
         self.ui_hearts : list[UiSprite] = []
+
+        self.shot_cooldown : Timer|None
         self.dynamic_mask = True
         Player.inactive_elements.append(self)
 
     @classmethod
     def spawn(cls, new_pos : pygame.Vector2):
         element = cls.inactive_elements[0]
+        cls.unpool(element)
 
         element.image = cls.test_image
         element.rect = element.image.get_rect()
@@ -46,10 +50,21 @@ class Player(Sprite):
         element.hp = 3
         element.max_hp = 3
         element.update_ui_hearts()
-        cls.unpool(element)
+
+        element.shot_cooldown = Timer(0.35, core_object.game.game_timer.get_time)
+        
         return element
     
     def update(self, delta: float):
+        self.input_action()
+        self.do_movement(delta)
+        self.do_collisions()
+    
+    def input_action(self):
+        if (pygame.key.get_pressed())[pygame.K_SPACE]:
+            self.shoot()
+    
+    def do_movement(self, delta : float):
         keyboard_map = pygame.key.get_pressed()
         move_vector : pygame.Vector2 = pygame.Vector2(0,0)
         speed : int = 7
@@ -64,12 +79,11 @@ class Player(Sprite):
         if move_vector.magnitude() != 0: move_vector.normalize_ip()
         self.position += move_vector * speed * delta
         self.clamp_rect(pygame.Rect(0,0, *core_object.main_display.get_size()))
-        self.do_collisions()
     
     def do_collisions(self):
-        enemies : list[Enemy] = self.get_all_colliding(Enemy)
+        enemies : list[Zombie] = self.get_all_colliding(Zombie)
         for enemy in enemies:
-            if not isinstance(enemy, Enemy): continue
+            if not isinstance(enemy, Zombie): continue
             enemy.kill_instance_safe()
             self.take_damage(1)
 
@@ -88,9 +102,11 @@ class Player(Sprite):
         self.update_ui_hearts()
     
     def shoot(self):
+        if not self.shot_cooldown.isover(): return
         player_to_mouse_vector = pygame.Vector2(pygame.mouse.get_pos()) - self.position
         shot_direction = player_to_mouse_vector.normalize()
-        Bullet.spawn(self.position, 7, shot_direction)
+        BaseProjectile.spawn(self.position, 7, shot_direction, BaseProjectile.TEAMS.friendly)
+        self.shot_cooldown.restart()
     
     def new_ui_heart(self, index : int):
         x_pos = 950 - index * 60
@@ -112,15 +128,28 @@ class Player(Sprite):
 
     
     def handle_key_event(self, event : pygame.Event):
+        if event.type != pygame.KEYDOWN: return
+        if core_object.game.state == core_object.game.STATES.paused: return
+        if core_object.game.state == core_object.game.STATES.transition: return
         if event.key == pygame.K_SPACE:
+            self.shoot()
+    
+    def handle_mouse_event(self, event : pygame.Event):
+        if event.type != pygame.MOUSEBUTTONDOWN: return
+        if core_object.game.state == core_object.game.STATES.paused: return
+        if core_object.game.state == core_object.game.STATES.transition: return
+        if event.button == 1:
             self.shoot()
 
     @classmethod
     def receive_key_event(cls, event : pygame.Event):
-        if core_object.game.state == core_object.game.STATES.paused: return
-        if core_object.game.state == core_object.game.STATES.transition: return
         for element in cls.active_elements:
             element.handle_key_event(event)
+    
+    @classmethod
+    def receive_mouse_event(cls, event : pygame.Event):
+        for element in cls.active_elements:
+            element.handle_mouse_event(event)
     
     def clean_instance(self):
         self.image = None
@@ -132,12 +161,15 @@ class Player(Sprite):
         self.hp = None
         self.max_hp = None
         self.clear_ui_hearts()
+        self.shot_cooldown = None
     
 
 Sprite.register_class(Player)
 
 def make_connections():
     core_object.event_manager.bind(pygame.KEYDOWN, Player.receive_key_event)
+    core_object.event_manager.bind(pygame.MOUSEBUTTONDOWN, Player.receive_mouse_event)
 
 def remove_connections():
     core_object.event_manager.unbind(pygame.KEYDOWN, Player.receive_key_event)
+    core_object.event_manager.unbind(pygame.MOUSEBUTTONDOWN, Player.receive_mouse_event)

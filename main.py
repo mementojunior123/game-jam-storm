@@ -38,16 +38,16 @@ import utils.tween_module as TweenModule
 
 from game.test_player import TestPlayer
 from game.player import Player
-from game.bullet import Bullet
-from game.enemy import Enemy
+from game.projectiles import BaseProjectile
+from game.enemy import Zombie
 
 TestPlayer()
 Player()
-for _ in range(10):
-    Bullet()
+for _ in range(25):
+    BaseProjectile()
 
 for _ in range(5):
-    Enemy()
+    Zombie()
 
 core.settings.set_defualt({'Brightness' : 0})
 core.settings.load()

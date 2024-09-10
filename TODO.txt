@@ -11,6 +11,13 @@ Priority list
 -----Necessary-----
 -Add a token based perma-upgrade system.
 -Figure out what the prep section is going to be.
+-Figure out enemy spawning. (In progress)
 -------High--------
+-Find assets for backgrounds, the player, zombies and bullets. 
+-Figure out transition between areas. 
 ------Medium-------
+-Implement some sort of weapon system. 
+-Some sort of auto-aim. 
 -------Low---------
+-Implement settings. 
+-Mobile support.

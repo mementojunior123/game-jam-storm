@@ -157,6 +157,9 @@ class TweenChain:
         self.time_source : Callable[[], float] = time_source
         self.time_factor : float = time_factor
     
+    def register(self):
+        TweenChain.elements.append(self)
+    
     def play(self):
         self.current_step = 0
         first_track = self.get_track_from_step(0)
