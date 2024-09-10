@@ -46,7 +46,7 @@ Player()
 for _ in range(25):
     BaseProjectile()
 
-for _ in range(5):
+for _ in range(90):
     Zombie()
 
 core.settings.set_defualt({'Brightness' : 0})

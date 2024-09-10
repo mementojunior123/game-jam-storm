@@ -1,5 +1,6 @@
 import json
 import pygame
+from utils.helpers import Task
 from utils.my_timer import Timer
 import utils.interpolation as interpolation
 import utils.tween_module as TweenModule
@@ -38,6 +39,7 @@ class AnimationTrack:
 
         self.time_source : Callable[[], float]|None = time_source
         self.timer_factor : float = timer_factor
+        self.callback : Task|None = None
     
     def reset(self):
         instruction : AnimationInstruction
@@ -66,16 +68,20 @@ class AnimationTrack:
         instruction.execute(self)
                 
     
-    def play(self, update_manually : bool = False):
+    def play(self, update_manually : bool = False, callback : Task|None = None):
         self.has_started= True
         self.has_ended = False
+        self.callback = callback
         instruction: AnimationInstruction
         for i, instruction in enumerate(self.data):
             if self.blocking_tasks: break
             self.do_instruction(instruction, i)
             if instruction.has_ended: self.progress += 1
         if not update_manually:
-            AnimationTrack.elements.append(self)
+            self.register()
+    
+    def register(self):
+        AnimationTrack.elements.append(self)
     
     def stop(self):
         self.has_ended = True
@@ -88,7 +94,8 @@ class AnimationTrack:
         to_delete = []
         instruction: AnimationInstruction
         for i, instruction in enumerate(self.data): #this loop starting new tasks
-            if self.blocking_tasks: break #cant start new tasks when there's a blocking task
+            if self.blocking_tasks: 
+                break #cant start new tasks when there's a blocking task
             if instruction.has_started: continue #Already being handled by self.tasks
             if instruction.has_ended: continue #Already finished
             self.do_instruction(instruction, i)
@@ -128,7 +135,9 @@ class AnimationTrack:
         for instruction in to_delete:
             self.tasks.remove(instruction)
 
-        if self.progress >= self.count: self.has_ended = True  #; print('anim ended')
+        if self.progress >= self.count: 
+            self.has_ended = True
+            if self.callback: self.callback.execute()
     
     @classmethod
     def update_all_elements(cls):
@@ -157,6 +166,7 @@ class AnimationInstruction:
         self.last_value : Any|None = None
         self.timer : Timer|None = None
         self.animation_index : int
+    
     
     def get_anchor(self, sprite : 'Sprite', anchor : str|None) -> pygame.Vector2:
         if anchor is None:
@@ -211,194 +221,7 @@ class AnimationInstruction:
             return AnimationInstruction(data)
     
     def execute(self, track : AnimationTrack):
-        match self.type:
-
-            case "wait":
-                if not self.has_started:
-                    self.has_started = True
-                    self.timer = Timer(self.time / self.time_scale)
-                    track.blocking_tasks.append(self)
-
-                if self.timer.isover():
-
-                    self.has_ended = True
-                return
-            
-            case "delay":
-                if not self.has_started:
-                    self.has_started = True
-                    track.blocking_tasks.append(self)
-                
-                indexes = self.index
-                if type(indexes) is int:
-                    indexes = [indexes]
-
-                for index in indexes:
-                    if not track.data[index].has_ended: return     
-                self.has_ended = True
-
-
-            case "move_by":
-                self.has_started = True
-                self.target.x += self.offset[0]
-                self.target.y += self.offset[1]
-                self.target.rect.center = (round(self.target.x), round(self.target.y))
-                self.has_ended = True
-                return
-
-            case "move_to":
-                self.has_started = True
-                self.target.rect.__setattr__(self.anchor, self.target)
-                self.target.x, self.target.y = self.target.rect.center
-                self.has_ended = True
-                return
-            
-            case "slide_to":
-                if not self.has_started:
-                    self.has_started = True
-                    track.tasks.append(self)
-                    self.timer = Timer(self.time / self.time_scale)
-                    self.start_value = self.target.rect.__getattribute__(self.anchor)
-                    if type(self.easing_style) is str:
-                        self.easing_style = getattr(interpolation, self.easing_style)                 
-                    return
-                
-
-                alpha = self.timer.get_time() / self.timer.duration
-                if alpha > 1: 
-                    alpha = 1
-                    self.has_ended = True
-                
-
-                new_pos = interpolation.lerp(self.start_value, self.target, self.easing_style(alpha))
-
-                self.target.rect.__setattr__(self.anchor, new_pos)
-                self.target.x, self.target.y = self.target.rect.center
-                return
-            
-            case "slide_by":
-                if not self.has_started:
-                    self.has_started = True
-                    track.tasks.append(self)
-                    self.timer = Timer(self.time / self.time_scale)
-                    self.start_value = (self.target.x, self.target.y)
-                    self.last_value = (0,0)
-                    if type(self.easing_style) is str:
-                        self.easing_style = getattr(interpolation, self.easing_style)             
-                    return
-                
-                
-                alpha = self.timer.get_time() / self.timer.duration
-                if alpha > 1: 
-                    alpha = 1
-                    self.has_ended = True
-                
-                new_offset = interpolation.lerp((0, 0), self.offset, self.easing_style(alpha))
-                prev_offset= self.last_value
-                result = (new_offset[0] - prev_offset[0], new_offset[1] - prev_offset[1])
-
-                
-                self.target.x += result[0]
-                self.target.y += result[1]
-
-                self.target.rect.center = (round(self.target.x), round(self.target.y))
-                self.last_value = new_offset
-
-                return
-
-            case "rotate":
-                self.has_started = True
-                self.target.image = pygame.transform.rotate(self.target.image, self.angle)
-                self.has_ended = True
-                return
-            
-            case "rotate_over_time":
-                if not self.has_started:
-                    self.has_started = True
-                    track.tasks.append(self)
-                    self.timer = Timer(self.time / self.time_scale)
-                    self.start_value = self.target.image
-                    if type(self.easing_style) is str:
-                        self.easing_style = getattr(interpolation, self.easing_style)
-                    return
-                
-                alpha = self.timer.get_time() / self.timer.duration
-                if alpha > 1: 
-                    alpha = 1
-                    self.has_ended = True
-                
-                angle = interpolation.lerp(0, self.angle, self.easing_style(alpha))
-                self.target.image = pygame.transform.rotozoom(self.start_value, angle, 1)
-                old_center = self.target.rect.center
-                self.target.rect = self.target.image.get_rect(center = old_center)
-                self.target.x, self.target.y = self.target.rect.center
-
-            
-            case "switch_image":
-                self.has_started = True
-                source = self.target.__getattribute__(self.source)
-                new_image = source[self.index]
-                if self.dynamic_anchor:
-                    old_pos = self.target.rect.__getattribute__(self.dynamic_anchor)
-                    self.target.image = new_image
-                    self.target.rect = self.target.image.get_rect()
-                    self.target.rect.__setattr__(self.dynamic_anchor, old_pos)
-                else:
-                    self.target.image = new_image
-                
-                self.has_ended = True
-                return
-            
-            case "set_alpha":
-                self.has_started = True
-                self.target.image.set_alpha(self.target)
-                self.has_ended = True
-                return
-            
-            case "image_gradient":
-                if not self.has_started:
-                    self.has_started = True
-                    track.tasks.append(self)
-                    self.timer = Timer(self.time / self.time_scale)
-                    self.start_value = self.target.image
-                    if type(self.easing_style) is str:
-                        self.easing_style = getattr(interpolation, self.easing_style)
-                    return
-                
-                alpha = self.timer.get_time() / self.timer.duration
-                if alpha > 1: 
-                    alpha = 1
-                    self.has_ended = True
-
-                index = int(interpolation.lerp(0, self.target_index, self.easing_style(alpha))  )  
-                source = self.target.__getattribute__(self.source)
-                new_image = source[index]
-
-                if self.dynamic_anchor:
-                    old_pos = self.target.rect.__getattribute__(self.dynamic_anchor)
-                    self.target.image = new_image
-                    self.target.rect = self.target.image.get_rect()
-                    self.target.rect.__setattr__(self.dynamic_anchor, old_pos)
-                else:
-                    self.target.image = new_image
-            
-            case "alpha_gradient":
-                if not self.has_started:
-                    self.has_started = True
-                    track.tasks.append(self)
-                    self.timer = Timer(self.time / self.time_scale)
-                    self.start_value = self.target.image.get_alpha()
-                    if type(self.easing_style) is str:
-                        self.easing_style = getattr(interpolation, self.easing_style)
-                    return
-                
-                alpha = self.timer.get_time() / self.timer.duration
-                if alpha > 1: 
-                    alpha = 1
-                    self.has_ended = True
-
-                result = interpolation.lerp(self.start_value, self.target, self.easing_style(alpha))
-                self.target.image.set_alpha(result)
+        pass
         
     def reset(self):
         self.has_started = False
@@ -501,6 +324,7 @@ class SlideByInstruction(AnimationInstruction):
             self.easing_style = easing_style
     
     def execute(self, track: AnimationTrack, current_index : int|None = None):
+        if self.has_ended: return
         if not self.has_started:
             self.has_started = True
             track.tasks.append(self)
@@ -515,7 +339,7 @@ class SlideByInstruction(AnimationInstruction):
             alpha = 1
             self.has_ended = True
         
-        new_offset : pygame.Vector2 = interpolation.compatibilty_lerp((0, 0), self.offset, self.easing_style(alpha))
+        new_offset : pygame.Vector2 = interpolation.compatibilty_lerp(pygame.Vector2(0, 0), self.offset, self.easing_style(alpha))
         prev_offset : pygame.Vector2 = self.last_value
         result : pygame.Vector2 = new_offset - prev_offset
 
@@ -824,9 +648,16 @@ test_anim = [
     {"type" : "tween_property", "property" : "position", "goal" : [100, 100], "time" : 3, "easing_style" : interpolation.linear},
     ]
 
+player_death = [
+    {"type" : "wait", "time" : 0.5},
+    {"type" : "slide_by", "offset" : (0,-90), "time" : 0.3, "easing_style" : interpolation.quad_ease_out},
+    {"type" : "delay_rel" , "index" : -1},
+    {"type" : "slide_by", "offset" : (0, 600), "time" : 1.2, "easing_style" : interpolation.quad_ease_in},
+    {"type" : "wait", "time" : 0.5}
+]
 
 class Animation:
-    ANIM_DATA = {"test" : test_anim}
+    ANIM_DATA = {"test" : test_anim, "player_death" : player_death}
 
     @classmethod
     def get_animation(cls, name):

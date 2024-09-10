@@ -44,6 +44,7 @@ class Zombie(Sprite):
         return element
     
     def update(self, delta: float):
+        if not core_object.game.is_nm_state(): return
         player_direction : pygame.Vector2 = (core_object.game.player.position - self.position).normalize()
         self.position += player_direction * self.speed * delta
         self.do_collisions()

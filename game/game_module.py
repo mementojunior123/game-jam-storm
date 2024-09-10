@@ -9,8 +9,9 @@ import utils.interpolation as interpolation
 import utils.tween_module as TweenModule
 from utils.my_timer import Timer
 from game.sprite import Sprite
-from utils.helpers import average, random_float, Union
+from utils.helpers import average, random_float, Union, Task
 from utils.ui.brightness_overlay import BrightnessOverlay
+from utils.animation import Animation, AnimationTrack
 
 class GameStates:
     def __init__(self) -> None:
@@ -55,13 +56,25 @@ class Game:
 
         self.enemy_timer : Timer|None = None
         self.diff_table : dict[int, WaveInfo] = {
-            1 : WaveInfo(1.25, {'normal' : 10}, 1),
-            2 : WaveInfo(1, {'normal' : 14}, 1),
+            1 : WaveInfo(1.5, {'normal' : 10}, 1),
+            2 : WaveInfo(1.35, {'normal' : 10}, 1),
+            3 : WaveInfo(1.2, {'normal' : 10}, 1),
+            4 : WaveInfo(1.1, {'normal' : 10}, 1),
+            5 : WaveInfo(1, {'normal' : 10}, 1),
+            6 : WaveInfo(0.9, {'normal' : 10}, 1),
+            7 : WaveInfo(0.8, {'normal' : 10}, 1),
+            8 : WaveInfo(0.7, {'normal' : 10}, 1),
+            9 : WaveInfo(0.6, {'normal' : 10}, 1),
+            10 : WaveInfo(0.5, {'normal' : 10}, 1),
+            11 : WaveInfo(0.5, {'normal' : 90000}, 5),
         }
         self.current_wave : WaveInfo|None = None
         self.current_wave_num : int|None = None
+        self.break_timer : Timer|None = None
+        self.break_alerted : bool = False
 
-        
+    def is_nm_state(self):
+        return (self.state == self.STATES.normal)
 
     def start_game(self):
         self.active = True
@@ -74,10 +87,12 @@ class Game:
         self.current_wave = self.diff_table[1].copy()
         self.current_wave_num = 1
         self.enemy_timer = Timer(self.current_wave.spawn_delay, time_source=self.game_timer.get_time)
-        
+        self.break_timer = Timer(-1, time_source=self.game_timer.get_time)
+        self.break_alerted = False
 
         self.player = Player.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)))
         self.enemies = Zombie.active_elements
+        self.show_wave(1)
 
         
 
@@ -103,22 +118,52 @@ class Game:
         self.current_wave_num += 1
         self.current_wave = self.diff_table[self.current_wave_num].copy()
         self.enemy_timer.set_duration(self.current_wave.spawn_delay)
+        self.break_timer.set_duration(-1)
+        self.break_alerted = False
         self.show_wave(self.current_wave_num)
+    
+    def stop_waves(self):
+        self.current_wave = None
+        self.enemy_timer.set_duration(-1)
+        self.break_timer.set_duration(10)
 
     def main_logic(self, delta : float):
         if not self.player.is_alive():
-            self.fire_gameover_event()
+            if self.state != self.STATES.transition: self.do_gameover()
             return
         if self.current_wave:
-            if self.enemy_timer.isover():
-                self.enemy_timer.restart()
-                for _ in range(self.current_wave.zombie_per_heat): 
-                    zombie_type = self.get_random_zombie_type()
-                    if self.current_wave.zombie_count[zombie_type] > 0: self.current_wave.zombie_count[zombie_type] -= 1
-                    self.spawn_enemy(zombie_type)
-                    if not self.is_zombie_remaining():
-                        self.next_wave()
-                        break
+            self.active_logic()
+        else:
+            self.break_logic()
+    
+    def active_logic(self):
+        if self.enemy_timer.isover():
+            self.enemy_timer.restart()
+            for _ in range(self.current_wave.zombie_per_heat): 
+                zombie_type = self.get_random_zombie_type()
+                if self.current_wave.zombie_count[zombie_type] > 0: self.current_wave.zombie_count[zombie_type] -= 1
+                self.spawn_enemy(zombie_type)
+                if not self.is_zombie_remaining():
+                    self.next_wave_logic()
+                    break
+    
+    def break_logic(self):
+        if len(Zombie.active_elements): 
+            self.break_timer.restart()
+            return
+        if not self.break_alerted: 
+            self.alert_player("Break Time!")
+            self.break_alerted = True
+        if self.break_timer.isover():
+            self.next_wave()
+    
+    def next_wave_logic(self):
+        if not self.current_wave:
+            self.next_wave()
+        elif self.current_wave_num in [5, 10]:
+            self.stop_waves()
+        else:
+            self.next_wave()
     
     def get_random_zombie_type(self) -> str:
         if not self.current_wave: return None
@@ -144,7 +189,10 @@ class Game:
                 Zombie.spawn(spawn_pos, 2, 3)
     
     def show_wave(self, wave_num : int):
-        wave_sprite = TextSprite(pygame.Vector2(core_object.main_display.get_width() // 2, 90), 'midtop', 0, f'Wave {wave_num}', 
+        self.alert_player(f'Wave {wave_num}')
+    
+    def alert_player(self, text : str):
+        wave_sprite = TextSprite(pygame.Vector2(core_object.main_display.get_width() // 2, 90), 'midtop', 0, text, 
                         text_settings=(core_object.menu.font_60, 'White', False), text_stroke_settings=('Black', 2), colorkey=(0,255,0))
         
         wave_sprite.rect.bottom = -5
@@ -168,6 +216,7 @@ class Game:
     def pause(self):
         if not self.active: return
         if self.state == self.STATES.paused: return 
+        if self.state == self.STATES.transition: return
         self.game_timer.pause()
         window_size = core_object.main_display.get_size()
         pause_ui1 = BrightnessOverlay(-60, pygame.Rect(0,0, *window_size), 0, 'pause_overlay', zindex=999)
@@ -181,6 +230,7 @@ class Game:
     def unpause(self):
         if not self.active: return
         if self.state != self.STATES.paused: return
+        if self.state == self.STATES.transition: return
         self.game_timer.unpause()
         pause_ui1 = core_object.main_ui.get_sprite('pause_overlay')
         pause_ui2 = core_object.main_ui.get_sprite('pause_text')
@@ -190,9 +240,14 @@ class Game:
         self.prev_state = None
     
     
-    def fire_gameover_event(self, goto_result_screen : bool = True):
+    def fire_gameover_event(self):
         new_event = pygame.event.Event(core_object.END_GAME, {})
         pygame.event.post(new_event)
+    
+    def do_gameover(self):
+        track : AnimationTrack = Player.death_anim.load(self.player, self.game_timer.get_time)
+        track.play(False, callback=Task(self.fire_gameover_event))
+        self.state = self.STATES.transition
     
     def end_game(self):
         self.remove_connections()
@@ -217,6 +272,8 @@ class Game:
 
         self.current_wave_num = None
         self.current_wave = None
+        self.break_timer = None
+        self.break_alerted = False
 
    
     def init(self):

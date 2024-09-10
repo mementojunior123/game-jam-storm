@@ -23,6 +23,8 @@ class Player(Sprite):
     ui_heart_image.set_colorkey([0, 255, 0])
     ui_heart_image = pygame.transform.scale_by(ui_heart_image, 0.1)
 
+    death_anim : Animation = Animation.get_animation("player_death")
+
     def __init__(self) -> None:
         super().__init__()
         self.max_hp : int
@@ -56,6 +58,7 @@ class Player(Sprite):
         return element
     
     def update(self, delta: float):
+        if not core_object.game.is_nm_state(): return
         self.input_action()
         self.do_movement(delta)
         self.do_collisions()
@@ -129,15 +132,13 @@ class Player(Sprite):
     
     def handle_key_event(self, event : pygame.Event):
         if event.type != pygame.KEYDOWN: return
-        if core_object.game.state == core_object.game.STATES.paused: return
-        if core_object.game.state == core_object.game.STATES.transition: return
+        if not core_object.game.is_nm_state(): return
         if event.key == pygame.K_SPACE:
             self.shoot()
     
     def handle_mouse_event(self, event : pygame.Event):
         if event.type != pygame.MOUSEBUTTONDOWN: return
-        if core_object.game.state == core_object.game.STATES.paused: return
-        if core_object.game.state == core_object.game.STATES.transition: return
+        if not core_object.game.is_nm_state(): return
         if event.button == 1:
             self.shoot()
 
