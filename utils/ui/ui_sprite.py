@@ -32,7 +32,7 @@ class UiSprite:
         else:
             self.og_surf = None
 
-        self.rect : pygame.Rect = rect
+        self.rect : pygame.Rect = rect if rect is not None else self.surf.get_rect() if self.surf is not None else None
         self.tag : int = tag
         self.name : str|None = name
         self.zindex : int = zindex

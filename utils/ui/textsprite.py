@@ -20,7 +20,7 @@ class TextSprite(UiSprite):
         if text_alingment:
             self.max_line_lentgh, self.newline_height, = text_alingment
         else:
-            self.max_line_lentgh = 90000000
+            self.max_line_lentgh = 0
             self.newline_height = 5
         self._text_stroke_color : pygame.Color|str|None = None
         self._text_stroke_width : int|None = None

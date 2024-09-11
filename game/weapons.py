@@ -25,16 +25,18 @@ class WeaponStats:
     firerate_bonus : float = 0
 
     buffs : list['WeaponBuff'] = dataclasses.field(default_factory=lambda : [])
+    perma_buffs : list['WeaponBuff'] = dataclasses.field(default_factory=lambda : [])
 
     @property
     def firerate(self):
-        return round((self.base_firerate / self.firerate_mult) - self.firerate_bonus)
+        return (self.base_firerate / self.firerate_mult) - self.firerate_bonus
     @property
     def damage(self):
-        return (self.base_damage * self.damage_mult) + self.damage_bonus
+        return round((self.base_damage * self.damage_mult) + self.damage_bonus)
     
     def reset(self):
         self.clear_buffs()
+        self.perma_buffs.clear()
         self.damage_mult = 1
         self.damage_bonus = 0
         self.firerate_mult = 1
@@ -44,7 +46,11 @@ class WeaponStats:
     def apply_buff(self, new_buff : 'WeaponBuff'):
         new_buff.apply(self)
     
-    def manage_buffs(self):
+    def apply_perma_buff(self, new_buff : 'WeaponBuff'):
+        new_buff.apply(self, do_append=False)
+        self.perma_buffs.append(new_buff)
+    
+    def update_buffs(self):
         to_del : list[WeaponBuff] = []
         for buff in self.buffs:
             if buff.timer.isover():
@@ -62,8 +68,8 @@ class WeaponBuff:
         self.value : float = value
         self.timer : Timer = Timer(time, time_source=core_object.game.game_timer.get_time)
 
-    def apply(self, weapon : WeaponStats):
-        weapon.buffs.append(self)
+    def apply(self, weapon : WeaponStats, do_append : bool = True):
+        if do_append: weapon.buffs.append(self)
         match self.type:
             case WeaponBuffTypes.dmg_mult:
                 weapon.damage_mult += self.value
@@ -72,14 +78,14 @@ class WeaponBuff:
                 weapon.damage_bonus += self.value
             
             case WeaponBuffTypes.firerate_mult:
-                weapon.firerate_bonus += self.value
+                weapon.firerate_mult += self.value
             
             case WeaponBuffTypes.firerate_bonus:
                 weapon.firerate_bonus += self.value
 
-    def remove(self, weapon : WeaponStats):
+    def remove(self, weapon : WeaponStats, do_remove : bool = True):
         if self not in weapon.buffs: return
-        weapon.buffs.remove(self)
+        if do_remove: weapon.buffs.remove(self)
         match self.type:
             case WeaponBuffTypes.dmg_mult:
                 weapon.damage_mult += self.value
@@ -101,5 +107,5 @@ class WeaponBuffTypes:
 
 
 WEAPONS : dict[str, WeaponStats] = {
-    'normal' : WeaponStats('normal', 2, 0.01, FiringModes.single)
+    'normal' : WeaponStats('normal', 2, 0.35, FiringModes.auto)
 }

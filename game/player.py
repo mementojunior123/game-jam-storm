@@ -59,6 +59,7 @@ class Player(Sprite):
 
         element.weapon = WEAPONS['normal']
         element.weapon.reset()
+        element.weapon.apply_perma_buff(WeaponBuff(WeaponBuffTypes.firerate_mult, 0.2 * core_object.storage.firerate_level))
         element.shot_cooldown = Timer(element.weapon.firerate, core_object.game.game_timer.get_time)
         
         return element
