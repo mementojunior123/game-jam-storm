@@ -3,22 +3,27 @@ Game link: https://mementojunior123.itch.io/stormz-day
 The plan:
 -You have to fend off waves of zombies (the storm)
 -Every few waves, you change area
--Before each run, you have a perma-upgrade segment and a timed preparation segment (the calm). The timed preparation segment may be scrapped. 
+-There is perma-upgrades you can buy with currency.
+-Before each run, you have a perma-upgrade segment. (the calm)
+
+-Before each run, you also have a timed preparation segment. This might be scrapped.
 The better you do in the timed segment, the more powerful you are in your run.
 Each time you do the timed segment, you get better because of either experience (winning minigames) or solving puzzles.
--There is perma-upgrades you can buy with currency.
+
 
 Priority list
 -----Necessary-----
 -Add a token based perma-upgrade system. (In progress)
 -Figure out what the prep section is going to be. (Maybe scrapped)
 -Figure out enemy spawning. (In progress)
--------High--------
 -Implement some sort of weapon system. (In progress)
+-------High--------
+-Add different weapon types.
 -Find assets for backgrounds, the player, zombies and bullets. 
 -Figure out transition between areas. 
 ------Medium-------
 -Some sort of auto-aim. 
 -------Low---------
--Implement settings. 
+-Implement settings.
+-Implement saving between sessions.
 -Mobile support.
