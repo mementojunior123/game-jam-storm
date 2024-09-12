@@ -1,8 +1,11 @@
 import pygame
 from core.core import core_object
 from utils.my_timer import Timer
+from typing import Callable
 from dataclasses import dataclass
 import dataclasses
+
+from game.projectiles import BaseProjectile
 
 
 class FiringModes:
@@ -10,12 +13,46 @@ class FiringModes:
     burst = 'Burst'
     single = 'Single'
 
+class BaseWeapon:
+    def __init__(self, stats : 'WeaponStats', time_source : Callable[[], float]|None = None, name : str|None = None) -> None:
+        self.stats : WeaponStats = stats
+        self.unique_name : str|None = name
+        self.team : str = BaseProjectile.TEAMS.friendly
+        self.shot_cooldown : Timer = Timer(self.stats.firerate, time_source)
+    
+    def get_game_source(self):
+        self.shot_cooldown.time_source = core_object.game.game_timer.get_time
+    
+    def reset_shot_cooldown(self):
+        self.shot_cooldown.set_duration(self.stats.firerate)
+    
+    def ready_shot_cooldown(self):
+        self.shot_cooldown.set_duration(0)
+    
+    def shoot(self, shot_origin : pygame.Vector2, shot_direction : pygame.Vector2):
+        if not self.shot_cooldown.isover(): return
+        BaseProjectile.spawn(shot_origin, self.stats.projectile_speed, shot_direction, self.team, self.stats.damage)
+        self.reset_shot_cooldown()
+
+class ShotgunWeapon(BaseWeapon):
+    def __init__(self, stats: 'WeaponStats', pellet_count : int, spread : float, time_source: Callable[[], float] | None = None, name : str|None = None) -> None:
+        super().__init__(stats, time_source, name)
+        self.pellet_count : int = pellet_count
+        self.bullet_spread : float = spread
+    
+    def shoot(self, shot_origin : pygame.Vector2, shot_direction : pygame.Vector2):
+        if not self.shot_cooldown.isover(): return
+        angles : list[float] = [pygame.math.lerp(-self.bullet_spread, self.bullet_spread, i / (self.pellet_count - 1)) for i in range(self.pellet_count)]
+        for angle in angles:
+            BaseProjectile.spawn(shot_origin, self.stats.projectile_speed, shot_direction.rotate(angle), self.team, self.stats.damage)
+        self.reset_shot_cooldown()
+
 @dataclass
 class WeaponStats:
-    name : str
     base_damage : int
     base_firerate : float
     fire_mode : str
+    projectile_speed : float
     burst_info : None|dict = None
 
     damage_mult : float|int = 1
@@ -106,6 +143,8 @@ class WeaponBuffTypes:
     firerate_bonus = 'firerate_bonus'
 
 
-WEAPONS : dict[str, WeaponStats] = {
-    'normal' : WeaponStats('normal', 2, 0.35, FiringModes.auto)
+WEAPONS : dict[str, BaseWeapon] = {
+    'Pistol' : BaseWeapon(WeaponStats(3, 0.35, FiringModes.auto, 7)),
+    'Rifle' : BaseWeapon(WeaponStats(2, 0.2, FiringModes.auto, 7)),
+    'Shotgun' : ShotgunWeapon(WeaponStats(2, 0.5, FiringModes.single, 7), 5, 20)
 }

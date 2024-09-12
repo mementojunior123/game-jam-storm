@@ -201,8 +201,10 @@ class Menu(BaseMenu):
         TextSprite(pygame.Vector2(903, 40), 'midright', 0, '3', 'token_count', None, None, 0, (Menu.font_50, 'White', False), ('Black', 2), colorkey=[0,255,0]),
         BaseUiElements.new_button('BlueButton', 'Ready', 1, 'bottomright', (940, window_size[1] - 15), (0.4, 1.0), 
         {'name' : 'ready_button'}, (Menu.font_40, 'Black', False)),
-        BaseUiElements.new_button('BlueButton', 'Back', 1, 'bottomleft', (20, window_size[1] - 15), (0.4, 1.0), 
+        BaseUiElements.new_button('BlueButton', 'Back', 1, 'topleft', (15, 10), (0.4, 1.0), 
         {'name' : 'back_button'}, (Menu.font_40, 'Black', False)),
+        BaseUiElements.new_button('BlueButton', 'Next', 1, 'midbottom', (centerx, window_size[1] - 25), (0.4, 1.0), 
+        {'name' : 'next_button'}, (Menu.font_40, 'Black', False)),
         
         TextSprite(pygame.Vector2(180, 140), 'midtop', 0, 'Firerate I\nCost : 2', 'firerate_upg_title', 
                    {}, {}, 0, (Menu.font_50, 'Black', False), colorkey=[0, 255, 0]),
@@ -222,6 +224,17 @@ class Menu(BaseMenu):
         ],
 
         #stage 2 --> stage 3
+        [BaseUiElements.new_text_sprite('Weapons', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 25)),
+         BaseUiElements.new_button('BlueButton', 'Ready', 1, 'bottomright', (940, window_size[1] - 15), (0.4, 1.0), 
+        {'name' : 'ready_button'}, (Menu.font_40, 'Black', False)),
+        BaseUiElements.new_button('BlueButton', 'Back', 1, 'topleft', (15, 10), (0.4, 1.0), 
+        {'name' : 'back_button'}, (Menu.font_40, 'Black', False)),
+        BaseUiElements.new_button('BlueButton', 'Prev', 1, 'midbottom', (centerx, window_size[1] - 25), (0.4, 1.0), 
+        {'name' : 'prev_button'}, (Menu.font_40, 'Black', False)),
+        UiSprite(Menu.token_image, Menu.token_image.get_rect(topright = (955, 15)), 0, 'token_image'),
+        TextSprite(pygame.Vector2(903, 40), 'midright', 0, '3', 'token_count', None, None, 0, (Menu.font_50, 'White', False), ('Black', 2), colorkey=[0,255,0]),
+        *self.make_weapon_ui('Pistol', (180, 140)), *self.make_weapon_ui('Rifle', (465, 140)), *self.make_weapon_ui('Shotgun', (750, 140))],
+        #stage 3 --> stage 4
         [BaseUiElements.new_text_sprite('Results', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 25)),
         BaseUiElements.new_button('BlueButton', 'Next', 1, 'midbottom', (centerx, window_size[1] - 15), (0.35, 1), 
         {'name' : 'next_button'}, (Menu.font_40, 'Black', False)),
@@ -231,8 +244,8 @@ class Menu(BaseMenu):
         TextSprite(pygame.Vector2(centerx, 210), 'midtop', 0, 'Score:', 'wave_title', None, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
         TextSprite(pygame.Vector2(centerx, 240), 'midtop', 0, '0', 'score_count', None, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
         TextSprite(pygame.Vector2(560, 120), 'midleft', 0, 'New High!', 'score_high', {'visible' : False}, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
-        TextSprite(pygame.Vector2(centerx, 330), 'midtop', 0, 'Tokens Gained:', 'token_title', None, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
-        TextSprite(pygame.Vector2(centerx, 360), 'midtop', 0, '0', 'token_count', None, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
+        TextSprite(pygame.Vector2(centerx, 310), 'midtop', 0, 'Tokens Gained:', 'token_title', None, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
+        TextSprite(pygame.Vector2(centerx, 340), 'midtop', 0, '0', 'token_count', None, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
         TextSprite(pygame.Vector2(centerx, 390), 'midtop', 0, 'Current Token Count : 0', 'current_token_count', None, None, 0, (Menu.font_50, 'Black', False), colorkey=[0,255,0]),
         ]
         ]
@@ -307,19 +320,47 @@ class Menu(BaseMenu):
         token_count.text = f'{core_object.storage.upgrade_tokens}'
         token_count.rect = token_count.surf.get_rect(midright = (906, 40))
 
+    def make_weapon_ui(self, weapon_name : str, midtop : tuple[int, int]|pygame.Vector2) -> tuple[UiSprite]:
+        weapon_title_text = f'{weapon_name}\nCost : {core_object.storage.COST_TABLE['Weapons'][weapon_name]}'
+        weapon_title = BaseUiElements.new_text_sprite(weapon_title_text, (Menu.font_50, 'Black', False), 0, 'midtop', midtop, name = f'weapon_title_{weapon_name}')
+        weapon_interact = BaseUiElements.new_button('BlueButton', 'Buy', 1, 'midtop', (midtop[0], midtop[1] + 80), (0.4, 1), 
+                                                    name=f'weapon_interact_{weapon_name}')
+        return weapon_title, weapon_interact
+    
+    def update_weapon_ui_stage4(self, weapon_name : str):
+        weapon_title = self.get_sprite_by_name(self.stage, f'weapon_title_{weapon_name}')
+        if not weapon_title: return
+        midtop : tuple[int, int] = weapon_title.rect.midtop
+        interact_text : str
+        if weapon_name not in core_object.storage.owned_weapons:
+            interact_text = 'Buy'
+        elif weapon_name != core_object.storage.weapon_equipped:
+            interact_text = 'Equip'
+        else:
+            interact_text = 'Equipped'
+        new_weapon_interact = BaseUiElements.new_button('BlueButton', interact_text, 1, 'midtop', (midtop[0], midtop[1] + 60), 
+                                                        (0.4, 1 if interact_text != 'Equipped' else 1),name=f'weapon_interact_{weapon_name}')
+        self.find_and_replace(new_weapon_interact, self.stage, name=f'weapon_interact_{weapon_name}')
+    
 
     def exit_stage2(self):
         pass
 
-    def enter_stage3(self, score : int, wave_count : int, tokens_gained : int):
+    def enter_stage3(self):
+        self.stage = 3
+        for weapon in core_object.storage.ALL_WEAPONS:
+            self.update_weapon_ui_stage4(weapon)
+        self.update_token_count(self.stage)
+
+    def enter_stage4(self, score : int, wave_count : int, tokens_gained : int):
         prev_highscore : int = core_object.storage.high_score
         prev_wave_record : int = core_object.storage.high_wave
-        self.get_sprite_by_name(3, 'wave_count').text = f'{wave_count}'
-        self.get_sprite_by_name(3, 'score_count').text = f'{score}'
-        self.get_sprite_by_name(3, 'token_count').text = f'{tokens_gained}'
-        self.get_sprite_by_name(3, 'wave_high').visible = (wave_count > prev_wave_record)
-        self.get_sprite_by_name(3, 'score_high').visible = (score > prev_highscore)
-        current_token_count : TextSprite = self.get_sprite_by_name(3, 'current_token_count')
+        self.get_sprite_by_name(4, 'wave_count').text = f'{wave_count}'
+        self.get_sprite_by_name(4, 'score_count').text = f'{score}'
+        self.get_sprite_by_name(4, 'token_count').text = f'{tokens_gained}'
+        self.get_sprite_by_name(4, 'wave_high').visible = (wave_count > prev_wave_record)
+        self.get_sprite_by_name(4, 'score_high').visible = (score > prev_highscore)
+        current_token_count : TextSprite = self.get_sprite_by_name(4, 'current_token_count')
         current_token_count.text = f'Current Token Count : {core_object.storage.upgrade_tokens}'
         current_token_count.rect.centerx = 480
     
@@ -349,7 +390,7 @@ class Menu(BaseMenu):
                             self.update_firerate_level_stage2()
                             self.update_token_count()
                         else:
-                            self.alert_player('Not enough cost!')
+                            self.alert_player('Not enough tokens!')
                     else:
                         self.alert_player('This stat is already maxed!')
                 elif name == 'buy_damage':
@@ -361,7 +402,7 @@ class Menu(BaseMenu):
                             self.update_damage_level_stage2()
                             self.update_token_count()
                         else:
-                            self.alert_player('Not enough cost!')
+                            self.alert_player('Not enough tokens!')
                     else:
                         self.alert_player('This stat is already maxed!')
                 elif name == 'buy_vitality':
@@ -373,7 +414,7 @@ class Menu(BaseMenu):
                             self.update_vitality_level_stage2()
                             self.update_token_count()
                         else:
-                            self.alert_player('Not enough cost!')
+                            self.alert_player('Not enough tokens!')
                     else:
                         self.alert_player('This stat is already maxed!')
                 elif name == 'ready_button':
@@ -381,7 +422,33 @@ class Menu(BaseMenu):
                 
                 elif name == 'back_button':
                     self.stage = 1
+                elif name == 'next_button':
+                    self.enter_stage3()
             
             case 3:
+                if name == 'back_button':
+                    self.stage = 1
+                elif name == 'ready_button':
+                    self.launch_game()
+                elif name == 'prev_button':
+                    self.enter_stage2()
+                
+                elif name[:16] == 'weapon_interact_':
+                    weapon_name = name[16:]
+                    if weapon_name == core_object.storage.weapon_equipped:
+                        self.alert_player('You are already equpping this item!', 1.5)
+                    elif weapon_name in core_object.storage.owned_weapons:
+                        core_object.storage.weapon_equipped = weapon_name
+                    else:
+                        cost : int = core_object.storage.COST_TABLE['Weapons'][weapon_name]
+                        if core_object.storage.upgrade_tokens >= cost:
+                            core_object.storage.upgrade_tokens -= cost
+                            core_object.storage.owned_weapons.append(weapon_name)
+                        else:
+                            self.alert_player('Not enough tokens!')
+                    for weapon in core_object.storage.ALL_WEAPONS:
+                        self.update_weapon_ui_stage4(weapon)
+
+            case 4:
                 if name == 'next_button':
                     self.stage = 1

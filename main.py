@@ -86,8 +86,8 @@ def detect_game_over(event : pygame.Event):
 def end_game(event : pygame.Event = None):
     tokens_gained = 5 + (core.game.wave_count) * 4
     core.storage.upgrade_tokens += tokens_gained
-    core.menu.prepare_entry(3)
-    core.menu.enter_stage3(core.game.score, core.game.wave_count, tokens_gained)
+    core.menu.prepare_entry(4)
+    core.menu.enter_stage4(core.game.score, core.game.wave_count, tokens_gained)
     if core.game.score > core.storage.high_score:
         core.storage.high_score = core.game.score
     if core.game.wave_count > core.storage.high_wave:

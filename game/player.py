@@ -12,6 +12,7 @@ from utils.ui.ui_sprite import UiSprite
 from utils.my_timer import Timer
 from dataclasses import dataclass
 from game.weapons import FiringModes, WeaponStats, WeaponBuff, WeaponBuffTypes, WEAPONS
+from game.weapons import BaseWeapon, ShotgunWeapon
 
 
 class Player(Sprite):
@@ -37,8 +38,7 @@ class Player(Sprite):
         self.main_heart : UiSprite|None = None
         self.ui_healthbar : UiSprite|None = None
 
-        self.shot_cooldown : Timer|None
-        self.weapon : WeaponStats
+        self.weapon : BaseWeapon
 
         self.dynamic_mask = True
         Player.inactive_elements.append(self)
@@ -61,11 +61,13 @@ class Player(Sprite):
         element.hp = element.max_hp
         
 
-        element.weapon = WEAPONS['normal']
-        element.weapon.reset()
-        element.weapon.apply_perma_buff(WeaponBuff(WeaponBuffTypes.firerate_mult, 0.2 * core_object.storage.firerate_level))
-        element.weapon.apply_perma_buff(WeaponBuff(WeaponBuffTypes.dmg_mult, 0.2 * core_object.storage.damage_level))
-        element.shot_cooldown = Timer(element.weapon.firerate, core_object.game.game_timer.get_time)
+        element.weapon = WEAPONS[core_object.storage.weapon_equipped]
+        element.weapon.get_game_source()
+
+        element.weapon.stats.reset()
+        element.weapon.stats.apply_perma_buff(WeaponBuff(WeaponBuffTypes.firerate_mult, 0.2 * core_object.storage.firerate_level))
+        element.weapon.stats.apply_perma_buff(WeaponBuff(WeaponBuffTypes.dmg_mult, 0.2 * core_object.storage.damage_level))
+        element.weapon.ready_shot_cooldown()
 
         bar_image = make_upgrade_bar(150, 25, 1)
         element.ui_healthbar = UiSprite(bar_image, bar_image.get_rect(topright = (950, 20)), 0, 'healthbar')
@@ -83,7 +85,7 @@ class Player(Sprite):
         self.do_collisions()
     
     def input_action(self):
-        if (pygame.key.get_pressed())[pygame.K_SPACE] and (self.weapon.fire_mode == FiringModes.auto):
+        if (pygame.key.get_pressed())[pygame.K_SPACE] and (self.weapon.stats.fire_mode == FiringModes.auto):
             self.shoot()
     
     def do_movement(self, delta : float):
@@ -124,11 +126,11 @@ class Player(Sprite):
         self.update_healthbar()
     
     def shoot(self):
-        if not self.shot_cooldown.isover(): return
         player_to_mouse_vector = pygame.Vector2(pygame.mouse.get_pos()) - self.position
         shot_direction = player_to_mouse_vector.normalize()
-        BaseProjectile.spawn(self.position, 7, shot_direction, BaseProjectile.TEAMS.friendly, self.weapon.damage)
-        self.shot_cooldown.set_duration(self.weapon.firerate)
+        shot_origin = self.position
+        if type(self.weapon) is BaseWeapon or type(self.weapon) is ShotgunWeapon:
+            self.weapon.shoot(shot_origin, shot_direction)
     
     def update_healthbar(self):
         hp_percent : float = self.hp / self.max_hp
