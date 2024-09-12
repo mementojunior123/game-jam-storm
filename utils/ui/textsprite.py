@@ -4,7 +4,7 @@ from utils.ui.ui_sprite import UiSprite
 from utils.helpers import rotate_around_pivot_accurate
 class TextSprite(UiSprite):
     main_font = pygame.font.Font(r'assets/fonts/Pixeltype.ttf', 40)
-    def __init__(self, position : pygame.Vector2|tuple, rect_alignment : str, tag: int, text : str, name: str | None = None, attributes: dict = None, 
+    def __init__(self, position : pygame.Vector2|tuple, rect_alignment : str|None, tag: int, text : str, name: str | None = None, attributes: dict = None, 
                  data: dict = None, zindex: int = 0, text_settings : tuple[pygame.Font, pygame.Color, bool]|None = None, 
                  text_stroke_settings : tuple[pygame.Color, int]|None = None, text_alingment : tuple[int, int]|None = None,       
                  colorkey : pygame.Color|tuple[int, int, int]|None = None):
@@ -29,15 +29,16 @@ class TextSprite(UiSprite):
         self.rect_alignment = rect_alignment
         self._render_text(force_surf = True)
         self.rect = self.surf.get_rect()
-        self.rect.__setattr__(self.rect_alignment, position)
+        self.rect.__setattr__(self.rect_alignment, position) if self.rect_alignment is not None else self.rect.__setattr__('center', position)
         self.position = pygame.Vector2(self.rect.center)
         self._opacity = 1
     
         
     def _render(self):
+        if self.rect_alignment:
+            prev_rect = self.rect.copy()
+            prev_mesure = prev_rect.__getattribute__(self.rect_alignment)
         self._render_text()
-        prev_rect = self.rect.copy()
-        self.rect.topleft = (-777, -777)
         scalex_offset, scaley_offset = self._scale.x - 1, self._scale.y - 1
         if abs(scalex_offset) > 0.001 or abs(scaley_offset) > 0.001:
             self.surf = pygame.transform.scale_by(self.surf, self.scale)
@@ -53,8 +54,9 @@ class TextSprite(UiSprite):
             self.surf.set_alpha(self._opacity * 255)        
         for filter in self.filters:
             filter.apply(self.surf)
-        if self.rect.topleft[0] == -777 and self.rect.topleft[1] == -777:
-            self.rect.__setattr__(self.rect_alignment, prev_rect.__getattribute__(self.rect_alignment))
+        if self.rect_alignment:
+            self.rect.__setattr__(self.rect_alignment, prev_mesure)
+            self._position = pygame.Vector2(self.rect.center)
     
     def _render_text(self, force_surf= False):
         if self._true_text == '' and force_surf == False: return

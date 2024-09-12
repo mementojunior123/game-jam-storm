@@ -73,6 +73,9 @@ class Game:
         self.break_timer : Timer|None = None
         self.break_alerted : bool = False
 
+        self.score : int|None = None
+        self.wave_count : int|None = None
+
     def is_nm_state(self):
         return (self.state == self.STATES.normal)
 
@@ -86,6 +89,8 @@ class Game:
 
         self.current_wave = self.diff_table[1].copy()
         self.current_wave_num = 1
+        self.wave_count = 1
+        self.score = 0
         self.enemy_timer = Timer(self.current_wave.spawn_delay, time_source=self.game_timer.get_time)
         self.break_timer = Timer(-1, time_source=self.game_timer.get_time)
         self.break_alerted = False
@@ -116,6 +121,7 @@ class Game:
 
     def next_wave(self):
         self.current_wave_num += 1
+        self.wave_count = self.current_wave_num
         self.current_wave = self.diff_table[self.current_wave_num].copy()
         self.enemy_timer.set_duration(self.current_wave.spawn_delay)
         self.break_timer.set_duration(-1)
@@ -274,6 +280,9 @@ class Game:
         self.current_wave = None
         self.break_timer = None
         self.break_alerted = False
+
+        self.score = None
+        self.wave_count = None
 
    
     def init(self):

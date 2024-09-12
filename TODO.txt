@@ -6,23 +6,28 @@ The plan:
 -There is perma-upgrades you can buy with currency.
 -Before each run, you have a perma-upgrade segment. (the calm)
 
+### I made the decision to scrap this due to time constraints ###
+------------------------------------------------------------------------------------------------------
 -Before each run, you also have a timed preparation segment. This might be scrapped.
 The better you do in the timed segment, the more powerful you are in your run.
 Each time you do the timed segment, you get better because of either experience (winning minigames) or solving puzzles.
-
+------------------------------------------------------------------------------------------------------
+### I made the decision to scrap this due to time constraints ###
 
 Priority list
 -----Necessary-----
--Add a token based perma-upgrade system. (In progress)
--Figure out what the prep section is going to be. (Maybe scrapped)
--Figure out enemy spawning. (In progress)
--Implement some sort of weapon system. (In progress)
+-Add a token based perma-upgrade system. (Implemented)
+-Figure out what the prep section is going to be. (Scrapped)
+-Figure out enemy spawning. (Implemented)
+-Implement some sort of weapon stat system. (Implemented)
 -------High--------
--Add different weapon types.
+-Add different weapon types. (Brainstorming)
 -Find assets for backgrounds, the player, zombies and bullets. 
--Figure out transition between areas. 
+-Figure out transition between areas.
+-Add a clear display for highscores and improve the result screen.
 ------Medium-------
--Some sort of auto-aim. 
+-Add some sort of auto-aim.
+-Add a score system.
 -------Low---------
 -Implement settings.
 -Implement saving between sessions.

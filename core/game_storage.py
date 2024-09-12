@@ -6,10 +6,13 @@ if PLATFORM == 'emscripten':
 class GameStorage:
     def __init__(self) -> None:
         self.high_score : int = 0
-        self.upgrade_tokens : int = 99
+        self.high_wave : int = 0
+        self.upgrade_tokens : int = 10
         self.firerate_level : int = 0
         self.damage_level : int = 0
-        self.COST_TABLE : dict[str, list[int]] = {'Firerate' : [0, 2, 3, 5, 10, 15], 'Damage' : [0, 2, 3, 5, 10, 15]}
+        self.vitality_level : int = 0
+        self.COST_TABLE : dict[str, list[int]] = {'Firerate' : [0, 2, 3, 5, 10, 15], 'Damage' : [0, 2, 3, 5, 10, 15], 
+                                                  'Vitality' : [0, 2, 3, 5, 10, 15]}
     
     def load_from_file(self, file_path : str = 'assets/data/game_info.json'):
         pass

@@ -33,13 +33,13 @@ class Player(Sprite):
         super().__init__()
         self.max_hp : int
         self.hp : int
-        self.ui_hearts : list[UiSprite] = []
 
         self.main_heart : UiSprite|None = None
         self.ui_healthbar : UiSprite|None = None
 
         self.shot_cooldown : Timer|None
         self.weapon : WeaponStats
+
         self.dynamic_mask = True
         Player.inactive_elements.append(self)
 
@@ -57,9 +57,9 @@ class Player(Sprite):
 
         element.pivot = Pivot2D(element._position, element.image, (0, 0, 255))
 
-        element.hp = 3
-        element.max_hp = 3
-        element.update_ui_hearts()
+        element.max_hp = 5 * (1 + core_object.storage.vitality_level * 0.2)
+        element.hp = element.max_hp
+        
 
         element.weapon = WEAPONS['normal']
         element.weapon.reset()
@@ -70,10 +70,10 @@ class Player(Sprite):
         bar_image = make_upgrade_bar(150, 25, 1)
         element.ui_healthbar = UiSprite(bar_image, bar_image.get_rect(topright = (950, 20)), 0, 'healthbar')
         core_object.main_ui.add(element.ui_healthbar)
-
+        element.update_healthbar()
         element.main_heart = UiSprite(Player.ui_heart_image, Player.ui_heart_image.get_rect(topright = (793, 15)), 
                                       0, f'heart', colorkey=[0, 255, 0], zindex=1)
-        core_object.main_ui.add(element.main_heart)
+        #core_object.main_ui.add(element.main_heart)
         return element
     
     def update(self, delta: float):
@@ -121,7 +121,7 @@ class Player(Sprite):
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
-        self.update_ui_hearts()
+        self.update_healthbar()
     
     def shoot(self):
         if not self.shot_cooldown.isover(): return
@@ -131,26 +131,13 @@ class Player(Sprite):
         self.shot_cooldown.set_duration(self.weapon.firerate)
     
     def update_healthbar(self):
+        hp_percent : float = self.hp / self.max_hp
+        colors = {'Dark Green' : 0.8, 'Green' : 0.6, 'Yellow' : 0.4, 'Orange' : 0.2, 'Red' : -1}
+        for color, value in colors.items():
+            if hp_percent > value:
+                break
         reset_upgrade_bar(self.ui_healthbar.surf, 1, 150, 25)
-    
-    def new_ui_heart(self, index : int):
-        x_pos = 950 - index * 60
-        new_sprite = UiSprite(Player.ui_heart_image, Player.ui_heart_image.get_rect(), 0, f'heart{index}', colorkey=[0, 255, 0])
-        new_sprite.rect.top = 15
-        new_sprite.rect.right = x_pos
-        return new_sprite
-    
-    def update_ui_hearts(self):
-        return
-        self.clear_ui_hearts()
-        if self.hp > 0:
-            self.ui_hearts = [self.new_ui_heart(i) for i in range(self.hp)]
-            for heart in self.ui_hearts: core_object.main_ui.add(heart)
-    
-    def clear_ui_hearts(self):
-        for ui_sprite in self.ui_hearts:
-            core_object.main_ui.remove(ui_sprite)
-        self.ui_hearts.clear()
+        pygame.draw.rect(self.ui_healthbar.surf, color, (3, 3, pygame.math.lerp(0, 150, hp_percent), 25))
 
     
     def handle_key_event(self, event : pygame.Event):
@@ -184,12 +171,10 @@ class Player(Sprite):
 
         self.hp = None
         self.max_hp = None
-        self.clear_ui_hearts()
         self.shot_cooldown = None
         self.weapon = None
 
         self.main_heart = None
-        self.ui_hearts = None
         self.ui_healthbar = None
     
 

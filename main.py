@@ -84,8 +84,18 @@ def detect_game_over(event : pygame.Event):
     
 
 def end_game(event : pygame.Event = None):
+    tokens_gained = 5 + (core.game.wave_count) * 4
+    core.storage.upgrade_tokens += tokens_gained
+    core.menu.prepare_entry(3)
+    core.menu.enter_stage3(core.game.score, core.game.wave_count, tokens_gained)
+    if core.game.score > core.storage.high_score:
+        core.storage.high_score = core.game.score
+    if core.game.wave_count > core.storage.high_wave:
+        core.storage.high_wave = core.game.wave_count
+    
     core.game.end_game()
-    core.menu.prepare_entry(1)
+    
+
     core_object.event_manager.unbind(pygame.MOUSEBUTTONDOWN, Sprite.handle_mouse_event)
     core_object.event_manager.unbind(pygame.FINGERDOWN, Sprite.handle_touch_event)
     core_object.event_manager.unbind(pygame.KEYDOWN, detect_game_over)
