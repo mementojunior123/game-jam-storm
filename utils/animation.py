@@ -650,10 +650,10 @@ test_anim = [
 
 player_death = [
     {"type" : "wait", "time" : 0.5},
-    {"type" : "slide_by", "offset" : (0,-90), "time" : 0.3, "easing_style" : interpolation.quad_ease_out},
+    {"type" : "slide_by", "offset" : (0,-120), "time" : 0.3, "easing_style" : interpolation.quad_ease_out},
     {"type" : "delay_rel" , "index" : -1},
-    {"type" : "slide_by", "offset" : (0, 600), "time" : 1.2, "easing_style" : interpolation.quad_ease_in},
-    {"type" : "wait", "time" : 0.5}
+    {"type" : "slide_by", "offset" : (0, 1000), "time" : 1.2, "easing_style" : interpolation.quad_ease_in},
+    {"type" : "wait", "time" : 2}
 ]
 
 class Animation:

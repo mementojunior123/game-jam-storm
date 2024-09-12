@@ -7,6 +7,7 @@ from utils.pivot_2d import Pivot2D
 
 from game.projectiles import BaseProjectile
 from game.enemy import Zombie
+from utils.helpers import make_upgrade_bar, reset_upgrade_bar
 from utils.ui.ui_sprite import UiSprite
 from utils.my_timer import Timer
 from dataclasses import dataclass
@@ -34,6 +35,9 @@ class Player(Sprite):
         self.hp : int
         self.ui_hearts : list[UiSprite] = []
 
+        self.main_heart : UiSprite|None = None
+        self.ui_healthbar : UiSprite|None = None
+
         self.shot_cooldown : Timer|None
         self.weapon : WeaponStats
         self.dynamic_mask = True
@@ -60,8 +64,16 @@ class Player(Sprite):
         element.weapon = WEAPONS['normal']
         element.weapon.reset()
         element.weapon.apply_perma_buff(WeaponBuff(WeaponBuffTypes.firerate_mult, 0.2 * core_object.storage.firerate_level))
+        element.weapon.apply_perma_buff(WeaponBuff(WeaponBuffTypes.dmg_mult, 0.2 * core_object.storage.damage_level))
         element.shot_cooldown = Timer(element.weapon.firerate, core_object.game.game_timer.get_time)
-        
+
+        bar_image = make_upgrade_bar(150, 25, 1)
+        element.ui_healthbar = UiSprite(bar_image, bar_image.get_rect(topright = (950, 20)), 0, 'healthbar')
+        core_object.main_ui.add(element.ui_healthbar)
+
+        element.main_heart = UiSprite(Player.ui_heart_image, Player.ui_heart_image.get_rect(topright = (793, 15)), 
+                                      0, f'heart', colorkey=[0, 255, 0], zindex=1)
+        core_object.main_ui.add(element.main_heart)
         return element
     
     def update(self, delta: float):
@@ -118,6 +130,9 @@ class Player(Sprite):
         BaseProjectile.spawn(self.position, 7, shot_direction, BaseProjectile.TEAMS.friendly, self.weapon.damage)
         self.shot_cooldown.set_duration(self.weapon.firerate)
     
+    def update_healthbar(self):
+        reset_upgrade_bar(self.ui_healthbar.surf, 1, 150, 25)
+    
     def new_ui_heart(self, index : int):
         x_pos = 950 - index * 60
         new_sprite = UiSprite(Player.ui_heart_image, Player.ui_heart_image.get_rect(), 0, f'heart{index}', colorkey=[0, 255, 0])
@@ -126,6 +141,7 @@ class Player(Sprite):
         return new_sprite
     
     def update_ui_hearts(self):
+        return
         self.clear_ui_hearts()
         if self.hp > 0:
             self.ui_hearts = [self.new_ui_heart(i) for i in range(self.hp)]
@@ -171,6 +187,10 @@ class Player(Sprite):
         self.clear_ui_hearts()
         self.shot_cooldown = None
         self.weapon = None
+
+        self.main_heart = None
+        self.ui_hearts = None
+        self.ui_healthbar = None
     
 
 Sprite.register_class(Player)

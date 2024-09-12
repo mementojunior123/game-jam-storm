@@ -111,3 +111,21 @@ def average(values : list[float]):
 
 def random_float(a : float, b : float):
     return pygame.math.lerp(a, b, random())
+
+
+def make_upgrade_bar(width : int = 100, length : int = 20, count = 5, border : int = 3, border_color : str|ColorType = 'Black', 
+                     bg_color : str|ColorType = (90, 90, 90)):
+    surf = pygame.surface.Surface((width + border * 2, (length + border) * count + border))
+    surf.fill(border_color)
+    pygame.draw.rect(surf, bg_color, (border, border, width, (length + border) * count - border))
+    for i in range(count):
+        pygame.draw.rect(surf, border_color, (0, (border + length) * i, width + border * 2, border))
+    return surf
+
+def paint_upgrade_bar(surf : pygame.Surface, index : int, width : int = 100, length : int = 20, border : int = 3, color : str|ColorType = 'Green'):
+    pygame.draw.rect(surf, color, (border, (length + border) * index + border, width, length))
+
+def reset_upgrade_bar(surf : pygame.Surface, count : int = 5, width : int = 100, length : int = 20, border : int = 3, bg_color : str|ColorType = (90, 90, 90)):
+    for index in range(count):
+        pygame.draw.rect(surf, bg_color, (border, (length + border) * index + border, width, length))
+

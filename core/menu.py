@@ -1,5 +1,5 @@
 import pygame
-from utils.helpers import ColorType, scale_surf, to_roman, Callable
+from utils.helpers import ColorType, scale_surf, to_roman, Callable, paint_upgrade_bar, reset_upgrade_bar, make_upgrade_bar
 import random
 from utils.ui.ui_sprite import UiSprite
 from utils.ui.textsprite import TextSprite
@@ -33,7 +33,7 @@ class BaseMenu:
         if element not in self.temp or override == True:
             timer = time if type(time) == Timer else Timer(time, time_source, time_scale)
             self.temp[element] = timer
-    def alert_player(self, text : str):
+    def alert_player(self, text : str, alert_speed : float = 1):
         text_sprite = TextSprite(pygame.Vector2(core_object.main_display.get_width() // 2, 90), 'midtop', 0, text, 
                         text_settings=(core_object.menu.font_60, 'White', False), text_stroke_settings=('Black', 2), colorkey=(0,255,0))
         
@@ -43,11 +43,11 @@ class BaseMenu:
         self.add_temp(text_sprite, 5)
         TInfo = TweenModule.TweenInfo
         goal1 = {'rect.centery' : 50, 'position.y' : 50}
-        info1 = TInfo(interpolation.quad_ease_out, 0.5)
+        info1 = TInfo(interpolation.quad_ease_out, 0.3 / alert_speed)
         goal2 = {'rect.centery' : temp_y, 'position.y' : temp_y}
-        info2 = TInfo(interpolation.quad_ease_in, 0.8)
+        info2 = TInfo(interpolation.quad_ease_in, 0.4 / alert_speed)
         
-        on_screen_time = 2
+        on_screen_time = 1 / alert_speed
         info_wait = TInfo(lambda t : t, on_screen_time)
         goal_wait = {}
 
@@ -153,6 +153,8 @@ class BaseMenu:
         
         if found:
             self.stages[stage][index] = new_sprite
+        else:
+            print('Find and replace failed')
         return found
     
     def handle_tag_event(self, event : pygame.Event):
@@ -176,23 +178,11 @@ class BaseMenu:
                 if sprite.rect.collidepoint(mouse_pos):
                     sprite.on_click()
 
-def make_upgrade_bar(width : int = 100, length : int = 20, count = 5, border : int = 3, border_color : str|ColorType = 'Black', 
-                     bg_color : str|ColorType = (90, 90, 90)):
-    surf = pygame.surface.Surface((width + border * 2, (length + border) * count + border))
-    surf.fill(border_color)
-    pygame.draw.rect(surf, bg_color, (border, border, width, (length + border) * count - border))
-    for i in range(count):
-        pygame.draw.rect(surf, border_color, (0, (border + length) * i, width + border * 2, border))
-    return surf
+class Menu(BaseMenu):
+    token_image : pygame.Surface = pygame.image.load('assets/graphics/ui/resized_token_green_colorkey.png')
+    token_image.set_colorkey([0, 255, 0])
+    token_image = scale_surf(token_image, 0.075)
 
-def paint_upgrade_bar(surf : pygame.Surface, index : int, width : int = 100, length : int = 20, border : int = 3, color : str|ColorType = 'Green'):
-    pygame.draw.rect(surf, color, (border, (length + border) * index + border, width, length))
-
-def reset_upgrade_bar(surf : pygame.Surface, count : int = 5, width : int = 100, length : int = 20, border : int = 3, bg_color : str|ColorType = (90, 90, 90)):
-    for index in range(count):
-        pygame.draw.rect(surf, bg_color, (border, (length + border) * index + border, width, length))
-
-class Menu(BaseMenu):     
     def init(self):
         self.bg_color = (94, 129, 162)
         self.stage = 1
@@ -203,21 +193,35 @@ class Menu(BaseMenu):
         self.stages = [None, 
         [BaseUiElements.new_text_sprite('StormZ Day', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 50)),
         BaseUiElements.new_button('BlueButton', 'Play', 1, 'midbottom', (centerx, window_size[1] - 15), (0.5, 1.4), 
-        {'name' : 'play_button'}, (Menu.font_40, 'Black', False))], #stage 1
-        [BaseUiElements.new_text_sprite('Upgrades', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 50)),
-        BaseUiElements.new_button('BlueButton', 'Ready', 1, 'bottomright', (945, window_size[1] - 15), (0.5, 1.4), 
-        {'name' : 'ready_button'}, (Menu.font_40, 'Black', False)),
-        TextSprite(pygame.Vector2(115, 155), 'midtop', 0, 'Firerate I\nCost : 2', 'firerate_upg_title', {}, {}, 0, (Menu.font_50, 'Black', False), colorkey=[0, 255, 0]),
-        UiSprite(upgrade_bar_surf1, upgrade_bar_surf1.get_rect(midtop = (115, 250)), 0, 'firerate_upg_bar'),
-        BaseUiElements.new_button('BlueButton', 'Buy', 1, 'midtop', (115, 375), (0.35, 1), 
-        {'name' : 'buy_firerate'}, (Menu.font_40, 'Black', False)),
+        {'name' : 'play_button'}, (Menu.font_40, 'Black', False))], 
 
+        #stage1 --> stage 2
+        [BaseUiElements.new_text_sprite('Upgrades', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 50)),
+        UiSprite(Menu.token_image, Menu.token_image.get_rect(topright = (955, 15)), 0, 'token_image'),
+        TextSprite(pygame.Vector2(903, 40), 'midright', 0, '3', 'token_count', None, None, 0, (Menu.font_50, 'White', False), ('Black', 2), colorkey=[0,255,0]),
+        BaseUiElements.new_button('BlueButton', 'Ready', 1, 'bottomright', (940, window_size[1] - 15), (0.4, 1.0), 
+        {'name' : 'ready_button'}, (Menu.font_40, 'Black', False)),
+        BaseUiElements.new_button('BlueButton', 'Back', 1, 'bottomleft', (20, window_size[1] - 15), (0.4, 1.0), 
+        {'name' : 'back_button'}, (Menu.font_40, 'Black', False)),
+        
+        TextSprite(pygame.Vector2(115, 140), 'midtop', 0, 'Firerate I\nCost : 2', 'firerate_upg_title', 
+                   {}, {}, 0, (Menu.font_50, 'Black', False), colorkey=[0, 255, 0]),
+        UiSprite(upgrade_bar_surf1, upgrade_bar_surf1.get_rect(midtop = (115, 235)), 0, 'firerate_upg_bar'),
+        BaseUiElements.new_button('BlueButton', 'Buy', 1, 'midtop', (115, 360), (0.35, 1), 
+        {'name' : 'buy_firerate'}, (Menu.font_40, 'Black', False)),
+        
+        TextSprite(pygame.Vector2(400, 140), 'midtop', 0, 'Damage I\nCost : 2', 'damage_upg_title', {}, {}, 0, (Menu.font_50, 'Black', False), colorkey=[0, 255, 0]),
+        UiSprite(upgrade_bar_surf1.copy(), upgrade_bar_surf1.get_rect(midtop = (400, 235)), 0, 'damage_upg_bar'),
+        BaseUiElements.new_button('BlueButton', 'Buy', 1, 'midtop', (400, 360), (0.35, 1), 
+        {'name' : 'buy_damage'}, (Menu.font_40, 'Black', False)),
         ]
         ]
+        #self.get_sprite_by_name(2, 'token_count').rect.topright = (900, 15)
     
     def enter_stage2(self):
         self.stage = 2
         self.update_firerate_level_stage2()
+        self.update_token_count()
     
     def update_firerate_level_stage2(self):
         firerate_upg_bar = self.get_sprite_by_name(2, 'firerate_upg_bar')
@@ -228,15 +232,39 @@ class Menu(BaseMenu):
         firerate_upg_title : TextSprite = self.get_sprite_by_name(2, 'firerate_upg_title')
         firerate_level : int = core_object.storage.firerate_level
         if core_object.storage.firerate_level >= 5:
-            new_button = BaseUiElements.new_button('BlueButton', 'MAXED', 1, 'midtop', (115, 375), (0.35, 1), 
+            new_button = BaseUiElements.new_button('BlueButton', 'MAXED', 1, 'midtop', (115, 360), (0.35, 1), 
                                                    {'name' : 'buy_firerate'}, (Menu.font_40, 'Black', False))
             self.find_and_replace(new_button, 2, name='buy_firerate')
             firerate_upg_title.text = f'Firerate {'MAXED'}\nCost : MAXED'
         else:
-            new_button = BaseUiElements.new_button('BlueButton', 'Buy', 1, 'midtop', (115, 375), (0.35, 1), 
+            new_button = BaseUiElements.new_button('BlueButton', 'Buy', 1, 'midtop', (115, 360), (0.35, 1), 
                                                    {'name' : 'buy_firerate'}, (Menu.font_40, 'Black', False))
             self.find_and_replace(new_button, 2, name='buy_firerate')
-            firerate_upg_title.text = f'Firerate {to_roman(firerate_level + 1)}\nCost : {core_object.storage.COST_TABLE['Firerate'][firerate_level]}'
+            firerate_upg_title.text = f'Firerate {to_roman(firerate_level + 1)}\nCost : {core_object.storage.COST_TABLE['Firerate'][firerate_level+1]}'
+    
+    def update_damage_level_stage2(self):
+        damage_upg_bar = self.get_sprite_by_name(2, 'damage_upg_bar')
+        reset_upgrade_bar(damage_upg_bar.surf)
+        for i in range(core_object.storage.damage_level):
+            paint_upgrade_bar(damage_upg_bar.surf, i)
+            if i >= 4: break
+        damage_upg_title : TextSprite = self.get_sprite_by_name(2, 'damage_upg_title')
+        damage_level : int = core_object.storage.damage_level
+        if core_object.storage.damage_level >= 5:
+            new_button = BaseUiElements.new_button('BlueButton', 'MAXED', 1, 'midtop', (400, 360), (0.35, 1), 
+                                                   {'name' : 'buy_damage'}, (Menu.font_40, 'Black', False))
+            self.find_and_replace(new_button, 2, name='buy_damage')
+            damage_upg_title.text = f'Damage {'MAXED'}\nCost : MAXED'
+        else:
+            new_button = BaseUiElements.new_button('BlueButton', 'Buy', 1, 'midtop', (400, 360), (0.35, 1), 
+                                                   {'name' : 'buy_damage'}, (Menu.font_40, 'Black', False))
+            self.find_and_replace(new_button, 2, name='buy_damage')
+            damage_upg_title.text = f'Damage {to_roman(damage_level + 1)}\nCost : {core_object.storage.COST_TABLE['Damage'][damage_level+1]}'
+    
+    def update_token_count(self, current_stage : int = 2):
+        token_count : TextSprite = self.get_sprite_by_name(current_stage, 'token_count')
+        token_count.text = f'{core_object.storage.upgrade_tokens}'
+        token_count.rect = token_count.surf.get_rect(midright = (906, 40))
 
 
     def exit_stage2(self):
@@ -260,8 +288,32 @@ class Menu(BaseMenu):
                     self.enter_stage2()
             case 2:
                 if name == 'buy_firerate':
-                    core_object.storage.firerate_level += 1 if core_object.storage.firerate_level < 5 else 0
-                    self.update_firerate_level_stage2()
-                if name == 'ready_button':
+                    if core_object.storage.firerate_level < 5:
+                        cost : int = core_object.storage.COST_TABLE['Firerate'][core_object.storage.firerate_level + 1]
+                        if core_object.storage.upgrade_tokens >= cost:
+                            core_object.storage.upgrade_tokens -= cost
+                            core_object.storage.firerate_level += 1
+                            self.update_firerate_level_stage2()
+                            self.update_token_count()
+                        else:
+                            self.alert_player('Not enough cost!')
+                    else:
+                        self.alert_player('This stat is already maxed!')
+                elif name == 'buy_damage':
+                    if core_object.storage.damage_level < 5:
+                        cost : int = core_object.storage.COST_TABLE['Damage'][core_object.storage.damage_level + 1]
+                        if core_object.storage.upgrade_tokens >= cost:
+                            core_object.storage.upgrade_tokens -= cost
+                            core_object.storage.damage_level += 1
+                            self.update_damage_level_stage2()
+                            self.update_token_count()
+                        else:
+                            self.alert_player('Not enough cost!')
+                    else:
+                        self.alert_player('This stat is already maxed!')
+                elif name == 'ready_button':
                     self.launch_game()
+                
+                elif name == 'back_button':
+                    self.stage = 1
                    

@@ -186,7 +186,7 @@ class Game:
 
         match ztype:
             case ZombieTypes.normal:
-                Zombie.spawn(spawn_pos, 5, 3)
+                Zombie.spawn(spawn_pos, health=10, speed=3)
     
     def show_wave(self, wave_num : int):
         self.alert_player(f'Wave {wave_num}')
