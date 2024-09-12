@@ -28,6 +28,7 @@ Priority list
 ------Medium-------
 -Add some sort of auto-aim.
 -Add a score system.
+-Add visuals for the weapons.
 -------Low---------
 -Implement settings.
 -Implement saving between sessions.
