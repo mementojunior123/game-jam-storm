@@ -161,7 +161,13 @@ class Sprite:
         pass
 
     def clean_instance(self):
-        pass
+        self.image = None
+        self.rect = None
+        self._position = None
+        self.pivot = None
+        self.mask = None
+        self.zindex = None
+        self.animation_tracks = None
 
     def kill_instance(self):
         self.clean_instance()

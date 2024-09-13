@@ -29,6 +29,7 @@ class Player(Sprite):
     ui_heart_image = pygame.transform.scale_by(ui_heart_image, 0.1)
 
     death_anim : Animation = Animation.get_animation("player_death")
+    screen_transition : Animation = Animation.get_animation("player_screen_transition")
 
     def __init__(self) -> None:
         super().__init__()

@@ -40,9 +40,11 @@ from game.test_player import TestPlayer
 from game.player import Player
 from game.projectiles import BaseProjectile
 from game.enemy import Zombie
+from game.background import Background
 
 TestPlayer()
 Player()
+Background()
 for _ in range(99):
     BaseProjectile()
 

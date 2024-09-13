@@ -655,9 +655,12 @@ player_death = [
     {"type" : "slide_by", "offset" : (0, 1000), "time" : 1.2, "easing_style" : interpolation.quad_ease_in},
     {"type" : "wait", "time" : 2}
 ]
+player_screen_transition = [
+    {"type" : "slide_to", "target" : 961, "anchor" : "left", "time" : 0.5, "easing_style" : interpolation.smoothstep}
+]
 
 class Animation:
-    ANIM_DATA = {"test" : test_anim, "player_death" : player_death}
+    ANIM_DATA = {"test" : test_anim, "player_death" : player_death, "player_screen_transition" : player_screen_transition}
 
     @classmethod
     def get_animation(cls, name):

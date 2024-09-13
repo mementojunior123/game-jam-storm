@@ -9,7 +9,8 @@ import utils.interpolation as interpolation
 import utils.tween_module as TweenModule
 from utils.my_timer import Timer
 from game.sprite import Sprite
-from utils.helpers import average, random_float, Union, Task
+from utils.helpers import average, random_float, Union, Task, make_right_arrow
+from utils.ui.ui_sprite import UiSprite
 from utils.ui.brightness_overlay import BrightnessOverlay
 from utils.animation import Animation, AnimationTrack
 
@@ -18,6 +19,9 @@ class GameStates:
         self.transition = 'Transition'
         self.normal = 'Normal'
         self.paused = 'Paused'
+
+class BreakObjectives:
+    right_edge = 'RightWall'
 
 @dataclass
 class WaveInfo:
@@ -52,29 +56,32 @@ class Game:
         self.game_data : dict|None = {}
 
         self.player : Union['Player', None] = None
+        self.background : Union['Background', None] = None
         self.enemies : list['Zombie']|None = None
 
         self.enemy_timer : Timer|None = None
         self.diff_table : dict[int, WaveInfo] = {
-            1 : WaveInfo(1.5, {'normal' : 10}, 1),
-            2 : WaveInfo(1.35, {'normal' : 10}, 1),
-            3 : WaveInfo(1.2, {'normal' : 10}, 1),
-            4 : WaveInfo(1.1, {'normal' : 10}, 1),
-            5 : WaveInfo(1, {'normal' : 10}, 1),
-            6 : WaveInfo(0.9, {'normal' : 10}, 1),
-            7 : WaveInfo(0.8, {'normal' : 10}, 1),
-            8 : WaveInfo(0.7, {'normal' : 10}, 1),
-            9 : WaveInfo(0.6, {'normal' : 10}, 1),
-            10 : WaveInfo(0.5, {'normal' : 10}, 1),
+            1 : WaveInfo(1.5, {'normal' : 1}, 1),
+            2 : WaveInfo(1.35, {'normal' : 1}, 1),
+            3 : WaveInfo(1.2, {'normal' : 1}, 1),
+            4 : WaveInfo(1.1, {'normal' : 1}, 1),
+            5 : WaveInfo(1, {'normal' : 1}, 1),
+            6 : WaveInfo(0.9, {'normal' : 1}, 1),
+            7 : WaveInfo(0.8, {'normal' : 1}, 1),
+            8 : WaveInfo(0.7, {'normal' : 1}, 1),
+            9 : WaveInfo(0.6, {'normal' : 1}, 1),
+            10 : WaveInfo(0.5, {'normal' : 1}, 1),
             11 : WaveInfo(0.5, {'normal' : 90000}, 5),
         }
         self.current_wave : WaveInfo|None = None
         self.current_wave_num : int|None = None
         self.break_timer : Timer|None = None
         self.break_alerted : bool = False
+        self.break_objective : str|None = None
 
         self.score : int|None = None
         self.wave_count : int|None = None
+        self.current_area : int|None = None
 
     def is_nm_state(self):
         return (self.state == self.STATES.normal)
@@ -90,12 +97,15 @@ class Game:
         self.current_wave = self.diff_table[1].copy()
         self.current_wave_num = 1
         self.wave_count = 1
+        self.current_area = 0
         self.score = 0
         self.enemy_timer = Timer(self.current_wave.spawn_delay, time_source=self.game_timer.get_time)
         self.break_timer = Timer(-1, time_source=self.game_timer.get_time)
         self.break_alerted = False
+        self.break_objective = None
 
         self.player = Player.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)))
+        self.background = Background.spawn(0)
         self.enemies = Zombie.active_elements
         self.show_wave(1)
 
@@ -125,15 +135,19 @@ class Game:
         self.current_wave = self.diff_table[self.current_wave_num].copy()
         self.enemy_timer.set_duration(self.current_wave.spawn_delay)
         self.break_timer.set_duration(-1)
+        self.break_objective = None
         self.break_alerted = False
         self.show_wave(self.current_wave_num)
     
-    def stop_waves(self):
+    def stop_waves(self, objective : str|None = None):
         self.current_wave = None
         self.enemy_timer.set_duration(-1)
         self.break_timer.set_duration(10)
+        self.break_objective = objective
 
     def main_logic(self, delta : float):
+        if self.state == self.STATES.transition:
+            return
         if not self.player.is_alive():
             if self.state != self.STATES.transition: self.do_gameover()
             return
@@ -145,31 +159,47 @@ class Game:
     def active_logic(self):
         if self.enemy_timer.isover():
             self.enemy_timer.restart()
-            for _ in range(self.current_wave.zombie_per_heat): 
+            for _ in range(self.current_wave.zombie_per_heat):
+                if not self.is_zombie_remaining():
+                    break
                 zombie_type = self.get_random_zombie_type()
                 if self.current_wave.zombie_count[zombie_type] > 0: self.current_wave.zombie_count[zombie_type] -= 1
                 self.spawn_enemy(zombie_type)
                 if not self.is_zombie_remaining():
-                    self.next_wave_logic()
                     break
+        if (not Zombie.active_elements) and (not self.is_zombie_remaining()):
+            self.next_wave_logic()
     
     def break_logic(self):
         if len(Zombie.active_elements): 
             self.break_timer.restart()
             return
         if not self.break_alerted: 
-            self.alert_player("Break Time!")
+            self.alert_player("Next Area!")
             self.break_alerted = True
-        if self.break_timer.isover():
+        if self.break_objective == BreakObjectives.right_edge:
+            if self.player.rect.right >= 959:
+                self.current_area += 1
+                self.start_area_transition(self.current_area)
+        elif self.break_timer.isover():
             self.next_wave()
     
     def next_wave_logic(self):
+        #print(Zombie.active_elements)
         if not self.current_wave:
             self.next_wave()
         elif self.current_wave_num in [5, 10]:
-            self.stop_waves()
+            self.stop_waves(objective=BreakObjectives.right_edge)
+            arrow_image = make_right_arrow(100, 30, 'Red')
+            ui_sprite = UiSprite(arrow_image, arrow_image.get_rect(midright = (955, 270)), 0, 'next_area_arrow')
+            core_object.main_ui.add(ui_sprite)
         else:
             self.next_wave()
+    
+    def transition_to_break(self, break_duration : float, break_objective : str|None = None):
+        self.break_timer.set_duration(break_duration)
+        self.break_objective = break_objective
+        self.state = self.STATES.normal
     
     def get_random_zombie_type(self) -> str:
         if not self.current_wave: return None
@@ -218,6 +248,36 @@ class Game:
         chain = TweenModule.TweenChain(wave_sprite, [(info1, goal1), (info_wait, goal_wait), (info2, goal2)], True, self.game_timer.get_time)
         chain.register()
         chain.play()
+    
+    def start_area_transition(self, new_area : int = 1):
+        core_object.main_ui.remove(core_object.main_ui.get_sprite('next_area_arrow'))
+        self.state = self.STATES.transition
+        self.break_objective = None
+        self.current_area = new_area
+        track : AnimationTrack = self.player.screen_transition.load(self.player, self.game_timer.get_time)
+        fade_time : tuple[float, float] = (2, 0.6)
+        anim_time : float = track.data[0].time
+        callback = Task(self.fade_in_then_out, fade_time[0], fade_time[1])
+        track.play(callback=callback)
+        core_object.task_scheduler.schedule_task((fade_time[0] / 2 + anim_time + 0.01, self.game_timer.get_time, 1), setattr, self.player, 'position', pygame.Vector2(480, 270))
+        core_object.task_scheduler.schedule_task((fade_time[0] / 2 + anim_time + 0.01, self.game_timer.get_time, 1), self.background.switch_area, self.current_area)
+        core_object.task_scheduler.schedule_task((fade_time[0] + fade_time[1] + anim_time + 0.01, self.game_timer.get_time, 1), self.transition_to_break, 1)
+
+    def fade_in_then_out(self, time : float = 2, wait_time : float = 0.01):
+        overlay : BrightnessOverlay = BrightnessOverlay(0, pygame.Rect(0,0, *core_object.main_display.get_size()), 0, 'fade_in_overlay', zindex=100)
+        overlay.brightness = 0
+        TInfo = TweenModule.TweenInfo
+        goal1 = {'brightness' : -255}
+        info1 = TInfo(interpolation.linear, time / 2)
+        goal2 = {'brightness' : 0}
+        info2 = TInfo(interpolation.linear, time / 2)
+        info_wait = TInfo(lambda t : t, wait_time)
+        goal_wait = {}
+        chain = TweenModule.TweenChain(overlay, [(info1, goal1), (info_wait, goal_wait), (info2, goal2)], True, self.game_timer.get_time)
+        chain.register()
+        chain.play()
+        core_object.main_ui.add_temp(overlay, time + wait_time + 0.01, True, self.game_timer.get_time)
+        
     
     def pause(self):
         if not self.active: return
@@ -280,9 +340,11 @@ class Game:
         self.current_wave = None
         self.break_timer = None
         self.break_alerted = False
+        self.break_objective = None
 
         self.score = None
         self.wave_count = None
+        self.current_area = None
 
    
     def init(self):
@@ -307,6 +369,10 @@ class Game:
         global BaseProjectile
         import game.projectiles
         from game.projectiles import BaseProjectile
+
+        global Background
+        import game.background
+        from game.background import Background
 
         
     

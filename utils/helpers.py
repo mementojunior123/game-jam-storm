@@ -129,3 +129,9 @@ def reset_upgrade_bar(surf : pygame.Surface, count : int = 5, width : int = 100,
     for index in range(count):
         pygame.draw.rect(surf, bg_color, (border, (length + border) * index + border, width, length))
 
+def make_right_arrow(height : int, width : int, color : ColorType|str = (255, 0, 0), colorkey : ColorType|str = (0, 255, 0)) -> pygame.Surface:
+    surface = pygame.surface.Surface((width, height))
+    surface.set_colorkey(colorkey)
+    surface.fill(colorkey)
+    pygame.draw.polygon(surface, color, [(0,0), (width, height // 2), (0, height)])
+    return surface
