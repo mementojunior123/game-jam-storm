@@ -141,7 +141,7 @@ def load_alpha_to_colorkey(path : str, colorkey : ColorType|str):
     new_surf = pygame.surface.Surface(image.get_size())
     new_surf.set_colorkey(colorkey)
     new_surf.fill(colorkey)
-    new_surf.blit(image)
+    new_surf.blit(image, (0,0))
     return new_surf
 
 def tuple_vec_average(l : list[tuple[float, float]]) -> float:
