@@ -57,20 +57,20 @@ class Game:
 
         self.player : Union['Player', None] = None
         self.background : Union['Background', None] = None
-        self.enemies : list['Zombie']|None = None
+        self.enemies : list['BaseZombie']|None = None
 
         self.enemy_timer : Timer|None = None
         self.diff_table : dict[int, WaveInfo] = {
-            1 : WaveInfo(1.5, {'normal' : 1}, 1),
-            2 : WaveInfo(1.35, {'normal' : 1}, 1),
-            3 : WaveInfo(1.2, {'normal' : 1}, 1),
-            4 : WaveInfo(1.1, {'normal' : 1}, 1),
-            5 : WaveInfo(1, {'normal' : 1}, 1),
-            6 : WaveInfo(0.9, {'normal' : 1}, 1),
-            7 : WaveInfo(0.8, {'normal' : 1}, 1),
-            8 : WaveInfo(0.7, {'normal' : 1}, 1),
-            9 : WaveInfo(0.6, {'normal' : 1}, 1),
-            10 : WaveInfo(0.5, {'normal' : 1}, 1),
+            1 : WaveInfo(1.5, {'normal' : 10}, 1),
+            2 : WaveInfo(1.35, {'normal' : 8, 'quick' : 1, 'tank' : 1}, 1),
+            3 : WaveInfo(1.2, {'normal' : 5, 'quick' : 3, 'tank' : 2}, 1),
+            4 : WaveInfo(1.1, {'normal' : 8, 'quick' : 4, 'tank' : 3}, 1),
+            5 : WaveInfo(1, {'normal' : 10, 'quick' : 5, 'tank' : 5}, 1),
+            6 : WaveInfo(0.9, {'normal' : 8, 'quick' : 6, 'tank' : 6}, 1),
+            7 : WaveInfo(0.8, {'normal' : 5, 'quick' : 8, 'tank' : 7}, 1),
+            8 : WaveInfo(0.7, {'normal' : 5, 'quick' : 10, 'tank' : 10}, 1),
+            9 : WaveInfo(0.6, {'normal' : 10, 'quick' : 10, 'tank' : 10}, 1),
+            10 : WaveInfo(0.5, {'normal' : 10, 'quick' : 15, 'tank' : 12}, 1),
             11 : WaveInfo(0.5, {'normal' : 90000}, 5),
         }
         self.current_wave : WaveInfo|None = None
@@ -106,14 +106,19 @@ class Game:
 
         self.player = Player.spawn(pygame.Vector2(random.randint(0, 960),random.randint(0, 540)))
         self.background = Background.spawn(0)
-        self.enemies = Zombie.active_elements
+        self.enemies = BaseZombie.active_elements
         self.show_wave(1)
+    
+    def empty_wave(self, event : pygame.Event|None = None):
+        if self.current_wave:
+            for k in self.current_wave.zombie_count:
+                self.current_wave.zombie_count[k] = 0
 
         
 
     def make_connections(self):
         core_object.event_manager.bind(pygame.KEYDOWN, self.handle_key_event)
-
+        
         game.player.make_connections()
 
     def remove_connections(self):
@@ -128,6 +133,8 @@ class Game:
                     self.unpause()
                 elif self.state == self.STATES.normal:
                     self.pause()
+            elif event.key == pygame.K_LCTRL:
+                if core_object.IS_DEBUG: self.empty_wave(event)
 
     def next_wave(self):
         self.current_wave_num += 1
@@ -167,11 +174,11 @@ class Game:
                 self.spawn_enemy(zombie_type)
                 if not self.is_zombie_remaining():
                     break
-        if (not Zombie.active_elements) and (not self.is_zombie_remaining()):
+        if not self.is_zombie_remaining():
             self.next_wave_logic()
     
     def break_logic(self):
-        if len(Zombie.active_elements): 
+        if len(BaseZombie.active_elements): 
             self.break_timer.restart()
             return
         if not self.break_alerted: 
@@ -189,6 +196,7 @@ class Game:
         if not self.current_wave:
             self.next_wave()
         elif self.current_wave_num in [5, 10]:
+            if BaseZombie.active_elements: return
             self.stop_waves(objective=BreakObjectives.right_edge)
             arrow_image = make_right_arrow(100, 30, 'Red')
             ui_sprite = UiSprite(arrow_image, arrow_image.get_rect(midright = (955, 270)), 0, 'next_area_arrow')
@@ -222,7 +230,14 @@ class Game:
 
         match ztype:
             case ZombieTypes.normal:
-                Zombie.spawn(spawn_pos, health=10, speed=3)
+                NormalZombie.spawn(spawn_pos, health=9, speed=3)
+            
+            case ZombieTypes.quick:
+                QuickZombie.spawn(spawn_pos, health=6, speed=5)
+            
+            case ZombieTypes.tank:
+                TankZombie.spawn(spawn_pos, health=20, speed=2)
+
     
     def show_wave(self, wave_num : int):
         self.alert_player(f'Wave {wave_num}')
@@ -316,6 +331,7 @@ class Game:
         self.state = self.STATES.transition
     
     def end_game(self):
+        BaseZombie.class_cleanup()
         self.remove_connections()
         self.cleanup()
 
@@ -362,9 +378,9 @@ class Game:
         import game.player
         from game.player import Player
 
-        global Zombie, ZombieTypes
+        global BaseZombie, NormalZombie, ZombieTypes, QuickZombie, TankZombie
         import game.enemy
-        from game.enemy import Zombie, ZombieTypes
+        from game.enemy import BaseZombie, NormalZombie, ZombieTypes, QuickZombie, TankZombie
 
         global BaseProjectile
         import game.projectiles

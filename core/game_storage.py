@@ -8,19 +8,19 @@ class GameStorage:
         self.high_score : int = 0
         self.high_wave : int = 0
 
-        self.upgrade_tokens : int = 10
+        self.upgrade_tokens : int = 999
         self.firerate_level : int = 0
         self.damage_level : int = 0
         self.vitality_level : int = 0
 
         self.owned_weapons : list[str] = ['Pistol']
         self.weapon_equipped : str = 'Pistol'
-        self.ALL_WEAPONS : list[str] = ['Pistol', 'Rifle', 'Shotgun']
+        self.ALL_WEAPONS : list[str] = ['Pistol', 'Rifle', 'Shotgun', 'Piercer']
         self.COST_TABLE : dict[str, list[int]|dict[str, int]] = {
         'Firerate' : [0, 2, 3, 5, 10, 15], 
         'Damage' : [0, 2, 3, 5, 10, 15], 
         'Vitality' : [0, 2, 3, 5, 10, 15], 
-        'Weapons' : {'Pistol' : 0, 'Rifle' : 30, 'Shotgun' : 30}
+        'Weapons' : {'Pistol' : 0, 'Rifle' : 30, 'Shotgun' : 30, 'Piercer' : 100}
         }                                          
     
     def load_from_file(self, file_path : str = 'assets/data/game_info.json'):

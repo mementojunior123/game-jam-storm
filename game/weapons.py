@@ -5,7 +5,7 @@ from typing import Callable
 from dataclasses import dataclass
 import dataclasses
 
-from game.projectiles import BaseProjectile
+from game.projectiles import BaseProjectile, PeirceProjectile, NormalProjectile
 
 
 class FiringModes:
@@ -31,7 +31,7 @@ class BaseWeapon:
     
     def shoot(self, shot_origin : pygame.Vector2, shot_direction : pygame.Vector2):
         if not self.shot_cooldown.isover(): return
-        BaseProjectile.spawn(shot_origin, self.stats.projectile_speed, shot_direction, self.team, self.stats.damage)
+        boolet = NormalProjectile.spawn(shot_origin, self.stats.projectile_speed, shot_direction, self.team, self.stats.damage)
         self.reset_shot_cooldown()
 
 class ShotgunWeapon(BaseWeapon):
@@ -44,7 +44,17 @@ class ShotgunWeapon(BaseWeapon):
         if not self.shot_cooldown.isover(): return
         angles : list[float] = [pygame.math.lerp(-self.bullet_spread, self.bullet_spread, i / (self.pellet_count - 1)) for i in range(self.pellet_count)]
         for angle in angles:
-            BaseProjectile.spawn(shot_origin, self.stats.projectile_speed, shot_direction.rotate(angle), self.team, self.stats.damage)
+            NormalProjectile.spawn(shot_origin, self.stats.projectile_speed, shot_direction.rotate(angle), self.team, self.stats.damage)
+        self.reset_shot_cooldown()
+
+class PeirceWeapon(BaseWeapon):
+    def __init__(self, stats: 'WeaponStats', bullet_hp : int, time_source: Callable[[], float] | None = None, name: str | None = None) -> None:
+        super().__init__(stats, time_source, name)
+        self.bullet_hp : int = bullet_hp
+    
+    def shoot(self, shot_origin: pygame.Vector2, shot_direction: pygame.Vector2):
+        if not self.shot_cooldown.isover(): return
+        PeirceProjectile.spawn(shot_origin, self.stats.projectile_speed, shot_direction, self.team, self.stats.damage, hp= self.bullet_hp)
         self.reset_shot_cooldown()
 
 @dataclass
@@ -144,7 +154,9 @@ class WeaponBuffTypes:
 
 
 WEAPONS : dict[str, BaseWeapon] = {
-    'Pistol' : BaseWeapon(WeaponStats(3, 0.35, FiringModes.auto, 7)),
-    'Rifle' : BaseWeapon(WeaponStats(2, 0.2, FiringModes.auto, 7)),
-    'Shotgun' : ShotgunWeapon(WeaponStats(2, 0.5, FiringModes.single, 7), 5, 20)
+    'Pistol' : BaseWeapon(WeaponStats(4, 0.35, FiringModes.auto, 7)),
+    'Rifle' : BaseWeapon(WeaponStats(3, 0.2, FiringModes.auto, 7.6)),
+    'Shotgun' : ShotgunWeapon(WeaponStats(2, 0.5, FiringModes.auto, 7), 5, 20),
+    'Piercer' : PeirceWeapon(WeaponStats(6, 0.4, FiringModes.auto, 7), 99),
+    'debug' : PeirceWeapon(WeaponStats(20, 0.01, FiringModes.auto, 8), 99),
 }

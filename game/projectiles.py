@@ -9,7 +9,7 @@ class BulletTeams:
     def __init__(self) -> None:
         self.neutral = 'Neutral'
         self.friendly = 'Friendly'
-        self.enemy = 'Zombie'
+        self.enemy = 'Enemy'
 
 class BaseProjectile(Sprite):
     inactive_elements : list['BaseProjectile'] = []
@@ -39,13 +39,13 @@ class BaseProjectile(Sprite):
     def pool(cls, element):
         '''Transfers an element from active to inactive state. Nothing changes if the element is already inactive.'''
         if element in BaseProjectile.active_elements:
-            cls.active_elements.remove(element)
+            BaseProjectile.active_elements.remove(element)
         
         if element in Sprite.active_elements:
             Sprite.active_elements.remove(element)
         
         if element not in BaseProjectile.inactive_elements:
-            cls.inactive_elements.append(element)
+            BaseProjectile.inactive_elements.append(element)
 
         if element not in Sprite.inactive_elements:
             Sprite.inactive_elements.append(element)
@@ -53,16 +53,15 @@ class BaseProjectile(Sprite):
     @classmethod
     def unpool(cls, element):
         '''Transfers an element from inactive to active state. Nothing changes if the element is already active.'''
-
         if element not in BaseProjectile.active_elements:
-            cls.active_elements.append(element)
+            BaseProjectile.active_elements.append(element)
         
         if element not in Sprite.active_elements:
             Sprite.active_elements.append(element)
 
 
         if element in BaseProjectile.inactive_elements:
-            cls.inactive_elements.remove(element)
+            BaseProjectile.inactive_elements.remove(element)
 
         if element in Sprite.inactive_elements:
             Sprite.inactive_elements.remove(element)
@@ -105,6 +104,9 @@ class BaseProjectile(Sprite):
         if not self.rect.colliderect(BaseProjectile.game_area):
             self.kill_instance_safe()
     
+    def when_hit(self):
+        self.kill_instance_safe()
+    
     def clean_instance(self):
         self.image = None
         self.mask = None
@@ -117,4 +119,124 @@ class BaseProjectile(Sprite):
         self.damage = None
         self.team = None
     
+
+
+
+class NormalProjectile(BaseProjectile):
+    inactive_elements : list['NormalProjectile'] = []
+    active_elements : list['NormalProjectile'] = []
+    def __init__(self) -> None:
+        super().__init__()
+        NormalProjectile.inactive_elements.append(self)
+    
+    @classmethod
+    def spawn(cls, pos: pygame.Vector2, speed: float, direction: pygame.Vector2, team: str = 'Friendly', damage: float | int = 1):
+        element = cls.inactive_elements[0]
+        cls.unpool(element)
+
+        element.image = cls.test_image if random.randint(0, 1) else cls.test_image2
+        element.mask = pygame.mask.from_surface(element.image)
+        element.rect = element.image.get_rect()
+
+        element.position = pos.copy()
+        element.align_rect()
+        element.zindex = 100
+        element.pivot = Pivot2D(element._position, element.image, (0, 255, 0))
+
+        element.velocity = direction * speed
+        element.team = team
+        element.align_rect()
+
+        element.damage = damage
+        return element
+        
+
+    @classmethod
+    def pool(cls, element):
+        '''Transfers an element from active to inactive state. Nothing changes if the element is already inactive.'''
+        super().pool(element)
+        if element in NormalProjectile.active_elements:
+            NormalProjectile.active_elements.remove(element)
+        
+        if element not in NormalProjectile.inactive_elements:
+            NormalProjectile.inactive_elements.append(element)
+    
+    @classmethod
+    def unpool(cls, element):
+        '''Transfers an element from inactive to active state. Nothing changes if the element is already active.'''
+        super().unpool(element)
+        if element not in NormalProjectile.active_elements:
+            NormalProjectile.active_elements.append(element)
+
+
+        if element in NormalProjectile.inactive_elements:
+            NormalProjectile.inactive_elements.remove(element)
+    
+class PeirceProjectile(BaseProjectile):
+    inactive_elements : list['PeirceProjectile'] = []
+    active_elements : list['PeirceProjectile'] = []
+    def __init__(self) -> None:
+        super().__init__()
+        self.health : int
+        self.hit_memory : set[Sprite]
+        PeirceProjectile.inactive_elements.append(self)
+    
+    @classmethod
+    def spawn(cls, pos: pygame.Vector2, speed: float, direction: pygame.Vector2, team: str = 'Friendly', damage: float | int = 1, hp = 99):
+        element = cls.inactive_elements[0]
+        cls.unpool(element)
+
+        element.image = cls.test_image if random.randint(0, 1) else cls.test_image2
+        element.mask = pygame.mask.from_surface(element.image)
+        element.rect = element.image.get_rect()
+
+        element.position = pos.copy()
+        element.align_rect()
+        element.zindex = 100
+        element.pivot = Pivot2D(element._position, element.image, (0, 255, 0))
+
+        element.velocity = direction * speed
+        element.team = team
+        element.align_rect()
+
+        element.damage = damage
+        element.health = hp
+        element.hit_memory = set()
+        return element
+        
+
+    @classmethod
+    def pool(cls, element):
+        '''Transfers an element from active to inactive state. Nothing changes if the element is already inactive.'''
+        super().pool(element)
+        if element in PeirceProjectile.active_elements:
+            PeirceProjectile.active_elements.remove(element)
+        
+        if element not in PeirceProjectile.inactive_elements:
+            PeirceProjectile.inactive_elements.append(element)
+    
+    @classmethod
+    def unpool(cls, element):
+        '''Transfers an element from inactive to active state. Nothing changes if the element is already active.'''
+        super().unpool(element)
+        if element not in PeirceProjectile.active_elements:
+            PeirceProjectile.active_elements.append(element)
+
+
+        if element in PeirceProjectile.inactive_elements:
+            PeirceProjectile.inactive_elements.remove(element)
+    
+    def clean_instance(self):
+        self.health = None
+        self.hit_memory = None
+        return super().clean_instance()
+    
+    def when_hit(self):
+        self.health -= 1
+        if self.health <= 0: self.kill_instance_safe()
+        
+    
+
 Sprite.register_class(BaseProjectile)
+Sprite.register_class(NormalProjectile)
+Sprite.register_class(PeirceProjectile)

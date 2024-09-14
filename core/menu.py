@@ -233,7 +233,8 @@ class Menu(BaseMenu):
         {'name' : 'prev_button'}, (Menu.font_40, 'Black', False)),
         UiSprite(Menu.token_image, Menu.token_image.get_rect(topright = (955, 15)), 0, 'token_image'),
         TextSprite(pygame.Vector2(903, 40), 'midright', 0, '3', 'token_count', None, None, 0, (Menu.font_50, 'White', False), ('Black', 2), colorkey=[0,255,0]),
-        *self.make_weapon_ui('Pistol', (180, 140)), *self.make_weapon_ui('Rifle', (465, 140)), *self.make_weapon_ui('Shotgun', (750, 140))],
+        *self.make_weapon_ui('Pistol', (100, 140)), *self.make_weapon_ui('Rifle', (345, 140)), *self.make_weapon_ui('Shotgun', (590, 140)), 
+        *self.make_weapon_ui('Piercer', (835, 140))],
         #stage 3 --> stage 4
         [BaseUiElements.new_text_sprite('Results', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 25)),
         BaseUiElements.new_button('BlueButton', 'Next', 1, 'midbottom', (centerx, window_size[1] - 15), (0.35, 1), 
@@ -443,11 +444,14 @@ class Menu(BaseMenu):
                         cost : int = core_object.storage.COST_TABLE['Weapons'][weapon_name]
                         if core_object.storage.upgrade_tokens >= cost:
                             core_object.storage.upgrade_tokens -= cost
+                            self.update_token_count(self.stage)
                             core_object.storage.owned_weapons.append(weapon_name)
+                            core_object.storage.weapon_equipped = weapon_name
                         else:
                             self.alert_player('Not enough tokens!')
                     for weapon in core_object.storage.ALL_WEAPONS:
                         self.update_weapon_ui_stage4(weapon)
+                    self.update_token_count(self.stage)
 
             case 4:
                 if name == 'next_button':

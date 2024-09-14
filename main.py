@@ -38,19 +38,21 @@ import utils.tween_module as TweenModule
 
 from game.test_player import TestPlayer
 from game.player import Player
-from game.projectiles import BaseProjectile
-from game.enemy import Zombie
+from game.projectiles import BaseProjectile, PeirceProjectile, NormalProjectile
+from game.enemy import BaseZombie, NormalZombie, QuickZombie, TankZombie
 from game.background import Background
 
 TestPlayer()
 Player()
 Background()
 for _ in range(99):
-    BaseProjectile()
+    NormalProjectile()
+    PeirceProjectile()
 
 for _ in range(90):
-    Zombie()
-
+    NormalZombie()
+    QuickZombie()
+    TankZombie()
 core.settings.set_defualt({'Brightness' : 0})
 core.settings.load()
 

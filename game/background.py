@@ -11,9 +11,11 @@ class Background(Sprite):
     areas[0] = pygame.Surface(screen_size)
     areas[0].fill((94,129,162))
     areas[1] = pygame.Surface(screen_size)
-    areas[1].fill((94,162,129))
+    areas[1].fill((94,160,129))
     areas[2] = pygame.Surface(screen_size)
-    areas[2].fill((255, 90, 0))
+    areas[2].fill((255, 80, 80)) #(255, 0, 160)
+    areas[3] = pygame.Surface(screen_size)
+    areas[3].fill((255, 80, 80))
 
     def __init__(self) -> None:
         super().__init__()

@@ -135,3 +135,23 @@ def make_right_arrow(height : int, width : int, color : ColorType|str = (255, 0,
     surface.fill(colorkey)
     pygame.draw.polygon(surface, color, [(0,0), (width, height // 2), (0, height)])
     return surface
+
+def load_alpha_to_colorkey(path : str, colorkey : ColorType|str):
+    image = pygame.image.load(path).convert_alpha()
+    new_surf = pygame.surface.Surface(image.get_size())
+    new_surf.set_colorkey(colorkey)
+    new_surf.fill(colorkey)
+    new_surf.blit(image)
+    return new_surf
+
+def tuple_vec_average(l : list[tuple[float, float]]) -> float:
+    x_sum : float = 0
+    y_sum : float = 0
+    count : int = 0
+    for x, y in l:
+        x_sum += x
+        y_sum += y
+        count += 1
+    x_sum /= count
+    y_sum /= count
+    return (x_sum, y_sum)

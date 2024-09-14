@@ -6,24 +6,26 @@ from utils.animation import Animation
 from utils.pivot_2d import Pivot2D
 
 from game.projectiles import BaseProjectile
-from game.enemy import Zombie
-from utils.helpers import make_upgrade_bar, reset_upgrade_bar
+from game.enemy import BaseZombie
+from utils.helpers import make_upgrade_bar, reset_upgrade_bar, load_alpha_to_colorkey
 from utils.ui.ui_sprite import UiSprite
 from utils.my_timer import Timer
 from dataclasses import dataclass
 from game.weapons import FiringModes, WeaponStats, WeaponBuff, WeaponBuffTypes, WEAPONS
-from game.weapons import BaseWeapon, ShotgunWeapon
+from game.weapons import BaseWeapon, ShotgunWeapon , PeirceWeapon
 
 
 class Player(Sprite):
     active_elements : list['Player'] = []
     inactive_elements : list['Player'] = []
     offset = 0
+    '''
     test_image : pygame.Surface = pygame.surface.Surface((50, 50))
     test_image.set_colorkey([0, 0, 255])
     test_image.fill([0, 0, 255])
     pygame.draw.circle(test_image, "Green", (25, 25), 25)
-
+    '''
+    test_image : pygame.Surface = load_alpha_to_colorkey('assets/graphics/player/main.png', [0, 255, 0])
     ui_heart_image : pygame.Surface = pygame.image.load("assets/graphics/ui/heart_green_colorkey.png")
     ui_heart_image.set_colorkey([0, 255, 0])
     ui_heart_image = pygame.transform.scale_by(ui_heart_image, 0.1)
@@ -61,8 +63,8 @@ class Player(Sprite):
         element.max_hp = 5 * (1 + core_object.storage.vitality_level * 0.2)
         element.hp = element.max_hp
         
-
-        element.weapon = WEAPONS[core_object.storage.weapon_equipped]
+        use_debug_weapon = 'debug' if (pygame.key.get_pressed()[pygame.K_o]) and core_object.IS_DEBUG else False
+        element.weapon = WEAPONS[use_debug_weapon or core_object.storage.weapon_equipped]
         element.weapon.get_game_source()
 
         element.weapon.stats.reset()
@@ -106,9 +108,9 @@ class Player(Sprite):
         self.clamp_rect(pygame.Rect(0,0, *core_object.main_display.get_size()))
     
     def do_collisions(self):
-        enemies : list[Zombie] = self.get_all_colliding(Zombie)
+        enemies : list[BaseZombie] = self.get_all_colliding(BaseZombie)
         for enemy in enemies:
-            if not isinstance(enemy, Zombie): continue
+            if not isinstance(enemy, BaseZombie): continue
             enemy.kill_instance_safe()
             self.take_damage(1)
 
@@ -127,10 +129,11 @@ class Player(Sprite):
         self.update_healthbar()
     
     def shoot(self):
+
         player_to_mouse_vector = pygame.Vector2(pygame.mouse.get_pos()) - self.position
         shot_direction = player_to_mouse_vector.normalize()
         shot_origin = self.position
-        if type(self.weapon) is BaseWeapon or type(self.weapon) is ShotgunWeapon:
+        if type(self.weapon) is BaseWeapon or type(self.weapon) is ShotgunWeapon or type(self.weapon) is PeirceWeapon:
             self.weapon.shoot(shot_origin, shot_direction)
     
     def update_healthbar(self):

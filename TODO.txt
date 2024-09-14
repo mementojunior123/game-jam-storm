@@ -22,13 +22,14 @@ Priority list
 -Implement some sort of weapon stat system. (Implemented)
 -------High--------
 -Add different weapon types. (Implemented)
--Add more enemy variety.
--Find assets for backgrounds, the player, zombies and bullets. 
--Figure out transition between areas. (In progress)
+-Add more enemy variety. (Partially implemented)
+-Find assets for backgrounds, the player, zombies and bullets. (In Progress)
+-Figure out transition between areas. (Partially implemented)
 -Add a clear display for highscores and improve the result screen.
 ------Medium-------
--Add some sort of auto-aim.
 -Add a score system.
+-Add a final wave.
+-Add some sort of auto-aim.
 -Add visuals for the weapons.
 -------Low---------
 -Implement settings.
