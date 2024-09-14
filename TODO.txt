@@ -15,23 +15,28 @@ Each time you do the timed segment, you get better because of either experience 
 ### I made the decision to scrap this due to time constraints ###
 
 Priority list
------Necessary-----
+
+Necessary : These are absolutely necessary for the game to work.
 -Add a token based perma-upgrade system. (Implemented)
 -Figure out what the prep section is going to be. (Scrapped)
 -Figure out enemy spawning. (Implemented)
 -Implement some sort of weapon stat system. (Implemented)
--------High--------
+
+High : These features will be prioritized during developpement. Ideally, all of them get finished.
 -Add different weapon types. (Implemented)
 -Add more enemy variety. (Partially implemented)
 -Find assets for backgrounds, the player, zombies and bullets. (In Progress)
 -Figure out transition between areas. (Partially implemented)
 -Add a clear display for highscores and improve the result screen.
-------Medium-------
+
+Medium : These features will be added if there is spare time at the end of the jam. Some of them may be added.
+-Add an armor system.
 -Add a score system.
 -Add a final wave.
 -Add some sort of auto-aim.
 -Add visuals for the weapons.
--------Low---------
+
+Low : These features will not be added in the game jam.
 -Implement settings.
 -Implement saving between sessions.
 -Mobile support.
