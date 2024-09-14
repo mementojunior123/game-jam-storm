@@ -30,6 +30,7 @@ High : These features will be prioritized during developpement. Ideally, all of 
 -Add a clear display for highscores and improve the result screen.
 
 Medium : These features will be added if there is spare time at the end of the jam. Some of them may be added.
+-Get a new game icon.
 -Add an armor system.
 -Add a score system.
 -Add a final wave.
