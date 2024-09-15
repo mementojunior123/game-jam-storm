@@ -111,8 +111,9 @@ class Player(Sprite):
         self.update_healthbars()
     
     def input_action(self):
-        if (pygame.key.get_pressed())[pygame.K_SPACE] and (self.weapon.stats.fire_mode == FiringModes.auto):
-            self.shoot()
+        if (pygame.key.get_pressed())[pygame.K_SPACE] or (pygame.mouse.get_pressed()[0] and core_object.game.game_timer.get_time() > 0.3): 
+            if self.weapon.stats.fire_mode == FiringModes.auto:
+                self.shoot()
     
     def do_movement(self, delta : float):
         keyboard_map = pygame.key.get_pressed()

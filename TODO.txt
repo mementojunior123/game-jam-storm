@@ -39,6 +39,7 @@ Medium : These features will be added if there is spare time at the end of the j
 -Add visuals for the weapons. (Scrapped)
 
 Low : These features will not be added in the game jam.
+-Add tooltips
 -Implement settings.
 -Implement saving between sessions.
 -Mobile support.
