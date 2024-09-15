@@ -120,6 +120,7 @@ def end_game(event : pygame.Event = None):
     else:
         core_object.bg_manager.play(core.menu.victory_theme, 1, loops=1)
 
+if core.IS_DEBUG: core.storage.upgrade_tokens = 999
 core.game.active = False
 core.menu.add_connections()
 core.menu.update_highscores_stage1()

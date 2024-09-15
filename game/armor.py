@@ -254,9 +254,9 @@ class RegenCooldownMult(ArmorBuff):
 
 ARMORS : dict[str, BaseArmor] = {
     None : None,
-    'Light' : BaseArmor(ArmorStats(0.6, 2, (2 / 2), 1), 1),
-    'Balanced' : BaseArmor(ArmorStats(0.75, 5, (5/4), 2.5), (6/7)),
+    'Light' : BaseArmor(ArmorStats(0.6, 2, (2 / 2), 2), (7/7)),
+    'Balanced' : BaseArmor(ArmorStats(0.75, 5, (5/4), 3.5), (6/7)),
     'Heavy' : BaseArmor(ArmorStats(0.9, 8, (6/8), 5), (5/7), True),
-    'Adaptative' : BaseArmor(ArmorStats(1, 2, (2 / 4), 2), 1, True)
+    'Adaptative' : BaseArmor(ArmorStats(1, 2, (2 / 4), 2), (7/7), True)
 
 }
