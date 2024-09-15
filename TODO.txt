@@ -29,7 +29,7 @@ High : These features will be prioritized during developpement. Ideally, all of 
 -Figure out transition between areas. (Implemented)
 -Add a clear display for highscores and improve the result screen. (Implemented)
 -Add sounds and music. (Partially implemented)
--Get a new game icon and thumbnail.
+-Get a new game icon and thumbnail. (Implemented)
 
 Medium : These features will be added if there is spare time at the end of the jam. Some of them may be added.
 -Add an armor system. (Implemented)
@@ -46,6 +46,4 @@ Low : These features will not be added in the game jam.
 FINAL DAY
 
 -Balance the game, especially token gain.
--Add a thumbnail and a game icon.
 -Do sound balancing.
--Add a menu theme and a victory theme (Optional).
