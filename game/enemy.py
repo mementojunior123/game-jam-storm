@@ -8,6 +8,7 @@ from utils.ui.textsprite import TextSprite
 from game.weapons import BaseWeapon, FiringModes, WeaponBuff, WeaponBuffTypes, WeaponStats, WEAPONS
 import utils.tween_module as TweenModule
 import utils.interpolation as interpolation
+from utils.my_timer import Timer
 
 class ZombieTypes:
     normal = 'normal'
@@ -48,6 +49,7 @@ class BaseZombie(Sprite):
     pygame.draw.circle(test_image, "Red", (25, 25), 25)
     ui_clusters : list[TextSprite] = []
     str_type = None
+    flash_image = load_alpha_to_colorkey('assets/graphics/enemy/flash_dark.png', [0, 255, 0])
     def __init__(self) -> None:
         super().__init__()
         self.dynamic_mask = True
@@ -55,6 +57,9 @@ class BaseZombie(Sprite):
         self.max_hp : int
         self.hp : int
         self.damage : int
+        self.flash_timer : Timer
+        self.flashing : bool = False
+        self.og_image : pygame.Surface|None = None
         BaseZombie.inactive_elements.append(self)
     
     @classmethod
@@ -77,8 +82,31 @@ class BaseZombie(Sprite):
         element.speed = speed
         element.damage = damage
 
+        element.flashing = False
+        element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
+        element.og_image = None
+
         cls.unpool(element)
         return element
+    
+    def start_flashing(self):
+        if self.flashing: self.flash_timer.restart(); return
+        self.flashing = True
+        self.flash_timer.set_duration(0.15)
+        self.og_image = self.image
+        self.image = self.flash_image
+    
+    def stop_flashing(self):
+        if not self.flashing: return
+        self.flashing = False
+        self.flash_timer.set_duration(-1)
+        self.image = self.og_image
+        self.og_image = None
+    
+    def update_flash(self):
+        if not self.flashing: return
+        if self.flash_timer.isover():
+            self.stop_flashing()
     
     @classmethod
     def pool(cls, element):
@@ -116,6 +144,7 @@ class BaseZombie(Sprite):
         player_direction : pygame.Vector2 = (core_object.game.player.position - self.position).normalize()
         self.position += player_direction * self.speed * delta
         self.do_collisions()
+        self.update_flash()
     
     def do_collisions(self):
         bullets : list[BaseProjectile] = self.get_all_colliding([BaseProjectile.active_elements])
@@ -128,6 +157,7 @@ class BaseZombie(Sprite):
                 else:
                     bullet.hit_memory.add(self)
             alive : bool = self.take_damage(bullet.damage)
+            self.start_flashing()
             bullet.when_hit()
             if not alive: break
     
@@ -242,6 +272,10 @@ class NormalZombie(BaseZombie):
         element.hp = health
         element.speed = speed
         element.damage = damage
+        
+        element.flashing = False
+        element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
+        element.og_image = None
 
         cls.unpool(element)
         return element
@@ -297,6 +331,11 @@ class QuickZombie(BaseZombie):
         element.hp = health
         element.speed = speed
         element.damage = damage
+        
+        element.flashing = False
+        element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
+        element.og_image = None
+
 
         cls.unpool(element)
         return element
@@ -352,6 +391,11 @@ class TankZombie(BaseZombie):
         element.hp = health
         element.speed = speed
         element.damage = damage
+        
+        element.flashing = False
+        element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
+        element.og_image = None
+
 
         cls.unpool(element)
         return element
@@ -407,6 +451,11 @@ class RangedZombie(BaseZombie):
         element.max_hp = health
         element.hp = health
         element.speed = speed
+        
+        element.flashing = False
+        element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
+        element.og_image = None
+
 
         element.damage = damage
         element.weapon = BaseWeapon(WeaponStats(1, 1, FiringModes.auto, 5), core_object.game.game_timer.get_time)
@@ -435,6 +484,7 @@ class RangedZombie(BaseZombie):
             return
         bullet = self.weapon.shoot(self.position, (core_object.game.player.position - self.position).normalize())
         if bullet: bullet.image = make_circle(4, (162, 42, 232))
+        self.update_flash()
         
 
     @classmethod
