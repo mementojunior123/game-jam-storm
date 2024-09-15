@@ -100,6 +100,7 @@ class BaseProjectile(Sprite):
     
     
     def update(self, delta: float):
+        if not core_object.game.is_nm_state(): return
         self.position += self.velocity * delta
         if not self.rect.colliderect(BaseProjectile.game_area):
             self.kill_instance_safe()

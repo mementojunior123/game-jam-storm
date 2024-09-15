@@ -427,7 +427,7 @@ class Menu(BaseMenu):
         self.get_sprite_by_name(4, 'wave_count').text = f'{wave_count}'
         score_count : TextSprite = self.get_sprite_by_name(4, 'score_count')
         score_count.text = f'{score}'
-        score_count.rect.centerx = 480
+        score_count.rect = score_count.surf.get_rect(midtop = (480, 240))
         self.get_sprite_by_name(4, 'token_count').text = f'{tokens_gained}'
         self.get_sprite_by_name(4, 'wave_high').visible = (wave_count > prev_wave_record)
         self.get_sprite_by_name(4, 'score_high').visible = (score > prev_highscore)

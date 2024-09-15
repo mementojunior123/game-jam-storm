@@ -60,6 +60,7 @@ class BaseZombie(Sprite):
         self.flash_timer : Timer
         self.flashing : bool = False
         self.og_image : pygame.Surface|None = None
+        self.is_dying : bool = False
         BaseZombie.inactive_elements.append(self)
     
     @classmethod
@@ -85,6 +86,7 @@ class BaseZombie(Sprite):
         element.flashing = False
         element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
         element.og_image = None
+        element.is_dying = False
 
         cls.unpool(element)
         return element
@@ -107,6 +109,10 @@ class BaseZombie(Sprite):
         if not self.flashing: return
         if self.flash_timer.isover():
             self.stop_flashing()
+    
+    def update_death_state(self):
+        self.update_flash()
+        if not self.flashing: self.kill_instance_safe()
     
     @classmethod
     def pool(cls, element):
@@ -141,6 +147,9 @@ class BaseZombie(Sprite):
     
     def update(self, delta: float):
         if not core_object.game.is_nm_state(): return
+        if self.is_dying:
+            self.update_death_state()
+            return
         player_direction : pygame.Vector2 = (core_object.game.player.position - self.position).normalize()
         self.position += player_direction * self.speed * delta
         self.do_collisions()
@@ -222,7 +231,8 @@ class BaseZombie(Sprite):
         return True
     
     def die(self):
-        self.kill_instance_safe()
+        self.is_dying = True
+        self.start_flashing()
         core_object.game.on_enemy_death(self)
         
 
@@ -276,6 +286,7 @@ class NormalZombie(BaseZombie):
         element.flashing = False
         element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
         element.og_image = None
+        element.is_dying = False
 
         cls.unpool(element)
         return element
@@ -335,6 +346,7 @@ class QuickZombie(BaseZombie):
         element.flashing = False
         element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
         element.og_image = None
+        element.is_dying = False
 
 
         cls.unpool(element)
@@ -395,6 +407,7 @@ class TankZombie(BaseZombie):
         element.flashing = False
         element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
         element.og_image = None
+        element.is_dying = False
 
 
         cls.unpool(element)
@@ -455,6 +468,7 @@ class RangedZombie(BaseZombie):
         element.flashing = False
         element.flash_timer = Timer(-1, core_object.game.game_timer.get_time)
         element.og_image = None
+        element.is_dying = False
 
 
         element.damage = damage
@@ -475,6 +489,9 @@ class RangedZombie(BaseZombie):
     
     def update(self, delta: float):
         if not core_object.game.is_nm_state(): return
+        if self.is_dying:
+            self.update_death_state()
+            return
         self.do_collisions()
         if self._zombie: return
         if self.entry_tween:

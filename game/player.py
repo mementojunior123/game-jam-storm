@@ -136,6 +136,7 @@ class Player(Sprite):
         enemies : list[BaseZombie] = self.get_all_colliding(BaseZombie)
         for enemy in enemies:
             if not isinstance(enemy, BaseZombie): continue
+            if enemy.is_dying: continue
             enemy.kill_instance_safe()
             self.take_damage(enemy.damage)
         
