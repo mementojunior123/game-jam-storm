@@ -204,7 +204,9 @@ class Menu(BaseMenu):
         BaseUiElements.new_button('BlueButton', 'Play', 1, 'midbottom', (centerx, window_size[1] - 15), (0.5, 1.4), 
         {'name' : 'play_button'}, (Menu.font_40, 'Black', False)),
         BaseUiElements.new_text_sprite('Highscore : 0', (Menu.font_50, 'Black', False), 0, 'topleft', (15, 200), name='highscore_text'),
-        BaseUiElements.new_text_sprite('Highest wave : 0', (Menu.font_50, 'Black', False), 0, 'topleft', (15, 260), name='highwave_text')], 
+        BaseUiElements.new_text_sprite('Highest wave : 0', (Menu.font_50, 'Black', False), 0, 'topleft', (15, 260), name='highwave_text'),
+        BaseUiElements.new_text_sprite('WASD to move', (Menu.font_50, 'Black', False), 0, 'topright', (945, 200)),
+        BaseUiElements.new_text_sprite('Hold space to shoot', (Menu.font_50, 'Black', False), 0, 'topright', (945, 260))], 
 
         #stage1 --> stage 2
         [BaseUiElements.new_text_sprite('Upgrades', (Menu.font_60, 'Black', False), 0, 'midtop', (centerx, 25)),

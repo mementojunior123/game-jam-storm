@@ -97,7 +97,7 @@ def end_game(event : pygame.Event = None):
         victory = event.victory
     else:
         victory = False
-    tokens_gained = (core.game.wave_count * 5)  + (core.game.score // 5)
+    tokens_gained = (core.game.wave_count * 5)  + (core.game.score // 12) + 10
     core.storage.upgrade_tokens += tokens_gained
     core.menu.prepare_entry(4)
     core.menu.enter_stage4(core.game.score, core.game.wave_count, tokens_gained, victory)

@@ -42,8 +42,3 @@ Low : These features will not be added in the game jam.
 -Implement settings.
 -Implement saving between sessions.
 -Mobile support.
-
-FINAL DAY
-
--Balance the game, especially token gain.
--Do sound balancing.
