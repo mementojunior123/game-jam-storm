@@ -3,14 +3,14 @@ import asyncio
 
 pygame.init()
 
-GAME_ICON = pygame.image.load('template_icon.png')
+GAME_ICON = pygame.image.load('icon.png')
 GAME_TITLE : str = "StormZ Day"
 pygame.display.set_icon(GAME_ICON)
 
 window_size = (960, 540)
 window = pygame.display.set_mode(window_size)
 
-pygame.mixer.set_num_channels(32)
+pygame.mixer.set_num_channels(48)
 
 from core.core import Core, core_object
 
@@ -39,7 +39,7 @@ import utils.tween_module as TweenModule
 from game.test_player import TestPlayer
 from game.player import Player
 from game.projectiles import BaseProjectile, PeirceProjectile, NormalProjectile
-from game.enemy import BaseZombie, NormalZombie, QuickZombie, TankZombie
+from game.enemy import BaseZombie, NormalZombie, QuickZombie, TankZombie, RangedZombie
 from game.background import Background
 
 TestPlayer()
@@ -53,6 +53,7 @@ for _ in range(90):
     NormalZombie()
     QuickZombie()
     TankZombie()
+    RangedZombie()
 core.settings.set_defualt({'Brightness' : 0})
 core.settings.load()
 
@@ -77,38 +78,54 @@ def start_game(event : pygame.Event):
     core_object.event_manager.bind(pygame.KEYDOWN, detect_game_over)
 
     
-    core.main_ui.add(fps_sprite)
-    core.main_ui.add(debug_sprite)
+    if core.IS_DEBUG: core.main_ui.add(fps_sprite)
+    if core.IS_DEBUG: core.main_ui.add(debug_sprite)
    
     
 def detect_game_over(event : pygame.Event):
     if event.type == pygame.KEYDOWN: 
-        if event.key == pygame.K_ESCAPE: 
+        if event.key == pygame.K_ESCAPE:
+            if core.game.wave_count == 1: core.game.wave_count = 0
             end_game(None)
+        elif event.key == pygame.K_F1:
+            pygame.image.save_extended(core.main_display, 'assets/screenshots/game_capture2.png', '.png')
     
 
 def end_game(event : pygame.Event = None):
-    tokens_gained = 5 + (core.game.wave_count) * 4
+    victory : bool
+    if event:
+        victory = event.victory
+    else:
+        victory = False
+    tokens_gained = (core.game.wave_count * 5)  + (core.game.score // 5)
     core.storage.upgrade_tokens += tokens_gained
     core.menu.prepare_entry(4)
-    core.menu.enter_stage4(core.game.score, core.game.wave_count, tokens_gained)
+    core.menu.enter_stage4(core.game.score, core.game.wave_count, tokens_gained, victory)
     if core.game.score > core.storage.high_score:
         core.storage.high_score = core.game.score
     if core.game.wave_count > core.storage.high_wave:
         core.storage.high_wave = core.game.wave_count
     
+    core_object.main_ui.clear_all()
     core.game.end_game()
     
 
     core_object.event_manager.unbind(pygame.MOUSEBUTTONDOWN, Sprite.handle_mouse_event)
     core_object.event_manager.unbind(pygame.FINGERDOWN, Sprite.handle_touch_event)
     core_object.event_manager.unbind(pygame.KEYDOWN, detect_game_over)
+    if core.menu.USE_RESULT_THEME:
+        core_object.bg_manager.play(core_object.menu.main_theme, 1, loops=-1)
+    elif not victory:
+        core_object.bg_manager.play(core_object.menu.fail_theme, 1, loops=1)
+    else:
+        core_object.bg_manager.play(core.menu.victory_theme, 1, loops=1)
 
 core.game.active = False
 core.menu.add_connections()
+core.menu.update_highscores_stage1()
 core.event_manager.bind(core.START_GAME, start_game)
 core.event_manager.bind(core.END_GAME, end_game)
-
+core.bg_manager.play(core.menu.main_theme, 1)
 def setup_debug_sprites():
     global fps_sprite
     global debug_sprite

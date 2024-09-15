@@ -136,6 +136,15 @@ def make_right_arrow(height : int, width : int, color : ColorType|str = (255, 0,
     pygame.draw.polygon(surface, color, [(0,0), (width, height // 2), (0, height)])
     return surface
 
+def make_circle(radius : int, color : ColorType|str, colorkey : ColorType|str = (0, 255, 0)) -> pygame.Surface:
+    d = radius * 2
+    surface : pygame.Surface = pygame.Surface((d, d))
+    surface.set_colorkey(colorkey)
+    surface.fill(colorkey)
+    pygame.draw.circle(surface, color, (radius, radius), radius)
+    return surface
+
+
 def load_alpha_to_colorkey(path : str, colorkey : ColorType|str):
     image = pygame.image.load(path).convert_alpha()
     new_surf = pygame.surface.Surface(image.get_size())

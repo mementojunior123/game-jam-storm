@@ -24,20 +24,28 @@ Necessary : These are absolutely necessary for the game to work.
 
 High : These features will be prioritized during developpement. Ideally, all of them get finished.
 -Add different weapon types. (Implemented)
--Add more enemy variety. (Partially implemented)
--Find assets for backgrounds, the player, zombies and bullets. (In Progress)
--Figure out transition between areas. (Partially implemented)
--Add a clear display for highscores and improve the result screen.
+-Add more enemy variety. (Implemented)
+-Find assets for backgrounds, the player, zombies and bullets. (Partially implemented)
+-Figure out transition between areas. (Implemented)
+-Add a clear display for highscores and improve the result screen. (Implemented)
+-Add sounds and music. (Partially implemented)
+-Get a new game icon and thumbnail.
 
 Medium : These features will be added if there is spare time at the end of the jam. Some of them may be added.
--Get a new game icon.
--Add an armor system.
--Add a score system.
--Add a final wave.
+-Add an armor system. (Implemented)
+-Add a score system. (Implemented)
+-Add a final wave. (Implemented)
 -Add some sort of auto-aim.
--Add visuals for the weapons.
+-Add visuals for the weapons. (Scrapped)
 
 Low : These features will not be added in the game jam.
 -Implement settings.
 -Implement saving between sessions.
 -Mobile support.
+
+FINAL DAY
+
+-Balance the game, especially token gain.
+-Add a thumbnail and a game icon.
+-Do sound balancing.
+-Add a menu theme and a victory theme (Optional).

@@ -3,8 +3,26 @@ from game.sprite import Sprite
 from core.core import core_object
 from utils.pivot_2d import Pivot2D
 from game.projectiles import BaseProjectile, PeirceProjectile
-from utils.helpers import load_alpha_to_colorkey, scale_surf, tuple_vec_average
+from utils.helpers import load_alpha_to_colorkey, scale_surf, tuple_vec_average, make_circle
 from utils.ui.textsprite import TextSprite
+from game.weapons import BaseWeapon, FiringModes, WeaponBuff, WeaponBuffTypes, WeaponStats, WEAPONS
+import utils.tween_module as TweenModule
+import utils.interpolation as interpolation
+
+class ZombieTypes:
+    normal = 'normal'
+    quick = 'quick'
+    tank = 'tank'
+    ranged = 'ranged'
+    zombie_dict : dict[str]
+
+    @staticmethod
+    def convert(ztype : str):
+        return ZombieTypes.zombie_dict[ztype]
+    
+    @classmethod
+    def get_dict(cls):
+        cls.zombie_dict = {cls.normal : NormalZombie, cls.quick : QuickZombie, cls.tank : TankZombie, cls.ranged : RangedZombie}
 
 class ZombieCluster:
     def __init__(self) -> None:
@@ -29,16 +47,18 @@ class BaseZombie(Sprite):
     test_image.fill([0, 0, 255])
     pygame.draw.circle(test_image, "Red", (25, 25), 25)
     ui_clusters : list[TextSprite] = []
+    str_type = None
     def __init__(self) -> None:
         super().__init__()
         self.dynamic_mask = True
         self.speed : float
         self.max_hp : int
         self.hp : int
+        self.damage : int
         BaseZombie.inactive_elements.append(self)
     
     @classmethod
-    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3):
+    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3, damage : int = 1):
         element = cls.inactive_elements[0]
 
         element.image = cls.test_image
@@ -55,6 +75,7 @@ class BaseZombie(Sprite):
         element.max_hp = health
         element.hp = health
         element.speed = speed
+        element.damage = damage
 
         cls.unpool(element)
         return element
@@ -125,7 +146,7 @@ class BaseZombie(Sprite):
                 distance_squared = (zombie_pos - other_zombie_pos).magnitude_squared()
                 if distance_squared <= 18 * 18:
                     result.zombies.add(other_zombie)
-            if result.get_count() >= 2: clusters[(zombie_pos.x, zombie_pos.y)] = result
+            if result.get_count() >= 3: clusters[(zombie_pos.x, zombie_pos.y)] = result
         
         banned_clusters : list[tuple[float, float]] = []
         for i, cluster in enumerate(clusters):
@@ -172,6 +193,7 @@ class BaseZombie(Sprite):
     
     def die(self):
         self.kill_instance_safe()
+        core_object.game.on_enemy_death(self)
         
 
     def clean_instance(self):
@@ -196,12 +218,13 @@ class NormalZombie(BaseZombie):
     test_image : pygame.Surface = load_alpha_to_colorkey('assets/graphics/enemy/normal/main.png', [73, 197, 2])
     inactive_elements : list['NormalZombie'] = []
     active_elements : list['NormalZombie'] = []
+    str_type = ZombieTypes.normal
     def __init__(self) -> None:
         super().__init__()
         NormalZombie.inactive_elements.append(self)
     
     @classmethod
-    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3):
+    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3, damage : int = 1):
         element = cls.inactive_elements[0]
 
         element.image = cls.test_image
@@ -218,6 +241,7 @@ class NormalZombie(BaseZombie):
         element.max_hp = health
         element.hp = health
         element.speed = speed
+        element.damage = damage
 
         cls.unpool(element)
         return element
@@ -249,12 +273,13 @@ class QuickZombie(BaseZombie):
     active_elements : list['NormalZombie'] = []
 
     test_image : pygame.Surface = load_alpha_to_colorkey('assets/graphics/enemy/quick/main.png', [73, 197, 2])
+    str_type = ZombieTypes.quick
     def __init__(self) -> None:
         super().__init__()
         QuickZombie.inactive_elements.append(self)
     
     @classmethod
-    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3):
+    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3, damage : int = 1):
         element = cls.inactive_elements[0]
 
         element.image = cls.test_image
@@ -271,6 +296,7 @@ class QuickZombie(BaseZombie):
         element.max_hp = health
         element.hp = health
         element.speed = speed
+        element.damage = damage
 
         cls.unpool(element)
         return element
@@ -302,12 +328,13 @@ class TankZombie(BaseZombie):
     active_elements : list['NormalZombie'] = []
 
     test_image : pygame.Surface = load_alpha_to_colorkey('assets/graphics/enemy/tank/main.png', [73, 197, 2])
+    str_type = ZombieTypes.tank
     def __init__(self) -> None:
         super().__init__()
         TankZombie.inactive_elements.append(self)
     
     @classmethod
-    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3):
+    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3, damage : int = 1):
         element = cls.inactive_elements[0]
 
         element.image = cls.test_image
@@ -324,6 +351,7 @@ class TankZombie(BaseZombie):
         element.max_hp = health
         element.hp = health
         element.speed = speed
+        element.damage = damage
 
         cls.unpool(element)
         return element
@@ -350,12 +378,89 @@ class TankZombie(BaseZombie):
         if element in TankZombie.inactive_elements:
             TankZombie.inactive_elements.remove(element)
 
-class ZombieTypes:
-    normal = 'normal'
-    quick = 'quick'
-    tank = 'tank'
-    zombie_dict = {normal : NormalZombie, quick : QuickZombie, tank : TankZombie}
+class RangedZombie(BaseZombie):
+    test_image : pygame.Surface = load_alpha_to_colorkey('assets/graphics/enemy/ranged/main.png', [0, 255, 0])
+    inactive_elements : list['RangedZombie'] = []
+    active_elements : list['RangedZombie'] = []
+    str_type = ZombieTypes.ranged
+    def __init__(self) -> None:
+        super().__init__()
+        self.weapon : BaseWeapon
+        self.entry_tween : TweenModule.TweenChain|None
+        RangedZombie.inactive_elements.append(self)
+    
+    @classmethod
+    def spawn(cls, new_pos : pygame.Vector2, health : int, speed : int = 3, damage : int = 1):
+        element = cls.inactive_elements[0]
 
-    @staticmethod
-    def convert(ztype : str):
-        return ZombieTypes.zombie_dict[ztype]
+        element.image = cls.test_image
+        #element.mask = pygame.mask.from_surface(element.image)
+        element.rect = element.image.get_rect()
+
+        element.position = new_pos
+        element.align_rect()
+        element.zindex = 10
+
+        element.pivot = Pivot2D(element._position, element.image, (0, 0, 255))
+
+
+        element.max_hp = health
+        element.hp = health
+        element.speed = speed
+
+        element.damage = damage
+        element.weapon = BaseWeapon(WeaponStats(1, 1, FiringModes.auto, 5), core_object.game.game_timer.get_time)
+        element.weapon.team = BaseProjectile.TEAMS.enemy
+        element.weapon.ready_shot_cooldown()
+        target_x : int|float = pygame.math.clamp(new_pos.x, 50, 960 - 50)
+        target_y : int|float = pygame.math.clamp(new_pos.y, 50, 540 - 50)
+        target_pos : pygame.Vector2 = pygame.Vector2(target_x, target_y)
+        goal1 = {'position' : target_pos}
+        info1 = TweenModule.TweenInfo(interpolation.quad_ease_out, 1 / speed)
+        goalwait = {}
+        infowait = TweenModule.TweenInfo(lambda t : t, 0.35 / speed)
+        element.entry_tween = TweenModule.TweenChain(element, [(info1, goal1), (infowait, goalwait)], time_source=core_object.game.game_timer.get_time)
+        element.entry_tween.play()
+        cls.unpool(element)
+        return element
+    
+    def update(self, delta: float):
+        if not core_object.game.is_nm_state(): return
+        self.do_collisions()
+        if self._zombie: return
+        if self.entry_tween:
+            self.entry_tween.update()
+            if self.entry_tween.has_finished:
+                self.entry_tween = None
+            return
+        bullet = self.weapon.shoot(self.position, (core_object.game.player.position - self.position).normalize())
+        if bullet: bullet.image = make_circle(4, (162, 42, 232))
+        
+
+    @classmethod
+    def pool(cls, element):
+        '''Transfers an element from active to inactive state. Nothing changes if the element is already inactive.'''
+        super().pool(element)
+        if element in RangedZombie.active_elements:
+            RangedZombie.active_elements.remove(element)
+        
+        if element not in RangedZombie.inactive_elements:
+            RangedZombie.inactive_elements.append(element)
+    
+    @classmethod
+    def unpool(cls, element):
+        '''Transfers an element from inactive to active state. Nothing changes if the element is already active.'''
+        super().unpool(element)
+        if element not in RangedZombie.active_elements:
+            RangedZombie.active_elements.append(element)
+
+
+        if element in RangedZombie.inactive_elements:
+            RangedZombie.inactive_elements.remove(element)
+    
+    def clean_instance(self):
+        super().clean_instance()
+        self.entry_tween = None
+        self.weapon = None
+
+ZombieTypes.get_dict()

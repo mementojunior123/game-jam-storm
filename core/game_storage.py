@@ -6,9 +6,9 @@ if PLATFORM == 'emscripten':
 class GameStorage:
     def __init__(self) -> None:
         self.high_score : int = 0
-        self.high_wave : int = 0
+        self.high_wave : int = 1
 
-        self.upgrade_tokens : int = 999
+        self.upgrade_tokens : int = 20
         self.firerate_level : int = 0
         self.damage_level : int = 0
         self.vitality_level : int = 0
@@ -16,11 +16,17 @@ class GameStorage:
         self.owned_weapons : list[str] = ['Pistol']
         self.weapon_equipped : str = 'Pistol'
         self.ALL_WEAPONS : list[str] = ['Pistol', 'Rifle', 'Shotgun', 'Piercer']
+
+        self.owned_armors : list[str] = []
+        self.armor_equipped : str|None = None
+        self.ALL_ARMORS : list[str] = ['Light', 'Balanced', 'Heavy', 'Adaptative']
+
         self.COST_TABLE : dict[str, list[int]|dict[str, int]] = {
-        'Firerate' : [0, 2, 3, 5, 10, 15], 
-        'Damage' : [0, 2, 3, 5, 10, 15], 
-        'Vitality' : [0, 2, 3, 5, 10, 15], 
-        'Weapons' : {'Pistol' : 0, 'Rifle' : 30, 'Shotgun' : 30, 'Piercer' : 100}
+        'Firerate' : [0, 5, 10, 20, 40, 50], 
+        'Damage' : [0, 5, 10, 20, 40, 50], 
+        'Vitality' : [0, 5, 10, 20, 40, 50], 
+        'Weapons' : {'Pistol' : 0, 'Rifle' : 50, 'Shotgun' : 50, 'Piercer' : 100},
+        'Armors' : {'Light' : 30, 'Balanced' : 50, 'Heavy' : 80, 'Adaptative' : 100}
         }                                          
     
     def load_from_file(self, file_path : str = 'assets/data/game_info.json'):

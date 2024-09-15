@@ -22,6 +22,7 @@ class GameStates:
 
 class BreakObjectives:
     right_edge = 'RightWall'
+    game_won = 'GameWon'
 
 @dataclass
 class WaveInfo:
@@ -45,7 +46,8 @@ class Game:
     font_50 = pygame.Font('assets/fonts/Pixeltype.ttf', 50)
     font_60 = pygame.Font('assets/fonts/Pixeltype.ttf', 60)
     font_70 = pygame.Font('assets/fonts/Pixeltype.ttf', 70)
-    
+    main_music : pygame.mixer.Sound = pygame.mixer.Sound('assets/audio/main_theme.ogg')
+    main_music.set_volume(0.25)
     def __init__(self) -> None:
         self.STATES : GameStates = GameStates()
 
@@ -62,16 +64,20 @@ class Game:
         self.enemy_timer : Timer|None = None
         self.diff_table : dict[int, WaveInfo] = {
             1 : WaveInfo(1.5, {'normal' : 10}, 1),
-            2 : WaveInfo(1.35, {'normal' : 8, 'quick' : 1, 'tank' : 1}, 1),
-            3 : WaveInfo(1.2, {'normal' : 5, 'quick' : 3, 'tank' : 2}, 1),
-            4 : WaveInfo(1.1, {'normal' : 8, 'quick' : 4, 'tank' : 3}, 1),
-            5 : WaveInfo(1, {'normal' : 10, 'quick' : 5, 'tank' : 5}, 1),
-            6 : WaveInfo(0.9, {'normal' : 8, 'quick' : 6, 'tank' : 6}, 1),
-            7 : WaveInfo(0.8, {'normal' : 5, 'quick' : 8, 'tank' : 7}, 1),
-            8 : WaveInfo(0.7, {'normal' : 5, 'quick' : 10, 'tank' : 10}, 1),
-            9 : WaveInfo(0.6, {'normal' : 10, 'quick' : 10, 'tank' : 10}, 1),
-            10 : WaveInfo(0.5, {'normal' : 10, 'quick' : 15, 'tank' : 12}, 1),
-            11 : WaveInfo(0.5, {'normal' : 90000}, 5),
+            2 : WaveInfo(1.35, {'normal' : 7, 'quick' : 1, 'tank' : 1, 'ranged' : 1}, 1),
+            3 : WaveInfo(1.2, {'normal' : 4, 'quick' : 3, 'tank' : 2, 'ranged' : 1}, 1),
+            4 : WaveInfo(1.1, {'normal' : 8, 'quick' : 4, 'tank' : 3, 'ranged' : 2}, 1),
+            5 : WaveInfo(1, {'normal' : 10, 'quick' : 5, 'tank' : 5, 'ranged' : 2}, 1),
+            6 : WaveInfo(0.9, {'normal' : 8, 'quick' : 6, 'tank' : 6, 'ranged' : 2}, 1),
+            7 : WaveInfo(0.8, {'normal' : 5, 'quick' : 8, 'tank' : 7, 'ranged' : 3}, 1),
+            8 : WaveInfo(0.7, {'normal' : 5, 'quick' : 10, 'tank' : 10, 'ranged' : 4}, 1),
+            9 : WaveInfo(0.6, {'normal' : 10, 'quick' : 10, 'tank' : 10, 'ranged' : 4}, 1),
+            10 : WaveInfo(0.5, {'normal' : 15, 'quick' : 15, 'tank' : 12, 'ranged' : 5}, 1),
+            11 : WaveInfo(0.5, {'normal' : 20, 'quick' : 15, 'tank' : 15, 'ranged' : 6}, 1),
+            12 : WaveInfo(0.45, {'normal' : 20, 'quick' : 15, 'tank' : 15, 'ranged' : 6}, 1),
+            13 : WaveInfo(0.4, {'normal' : 20, 'quick' : 15, 'tank' : 15, 'ranged' : 7}, 1),
+            14 : WaveInfo(0.35, {'normal' : 30, 'quick' : 25, 'tank' : 25, 'ranged' : 10}, 1),
+            15 : WaveInfo(0.3, {'normal' : 40, 'quick' : 30, 'tank' : 30, 'ranged' : 12}, 1)
         }
         self.current_wave : WaveInfo|None = None
         self.current_wave_num : int|None = None
@@ -82,6 +88,7 @@ class Game:
         self.score : int|None = None
         self.wave_count : int|None = None
         self.current_area : int|None = None
+        self.score_sprite : TextSprite|None = None
 
     def is_nm_state(self):
         return (self.state == self.STATES.normal)
@@ -108,7 +115,12 @@ class Game:
         self.background = Background.spawn(0)
         self.enemies = BaseZombie.active_elements
         self.show_wave(1)
-    
+        self.score_sprite = TextSprite(pygame.Vector2(5, 535), 'bottomleft', 0, 'Score : 0', 'score_sprite', None, None, 0, 
+                                       (Game.font_40, 'White', False), ('Black', 2), colorkey=[0, 255, 0])
+        core_object.main_ui.add(self.score_sprite)
+        core_object.bg_manager.stop_all()
+        core_object.bg_manager.play(self.main_music, 1)
+
     def empty_wave(self, event : pygame.Event|None = None):
         if self.current_wave:
             for k in self.current_wave.zombie_count:
@@ -146,10 +158,10 @@ class Game:
         self.break_alerted = False
         self.show_wave(self.current_wave_num)
     
-    def stop_waves(self, objective : str|None = None):
+    def stop_waves(self, objective : str|None = None, break_time : float = 10):
         self.current_wave = None
         self.enemy_timer.set_duration(-1)
-        self.break_timer.set_duration(10)
+        self.break_timer.set_duration(break_time)
         self.break_objective = objective
 
     def main_logic(self, delta : float):
@@ -181,13 +193,20 @@ class Game:
         if len(BaseZombie.active_elements): 
             self.break_timer.restart()
             return
-        if not self.break_alerted: 
-            self.alert_player("Next Area!")
-            self.break_alerted = True
+        
         if self.break_objective == BreakObjectives.right_edge:
+            if not self.break_alerted: 
+                self.alert_player("Next Area!")
+                self.break_alerted = True
             if self.player.rect.right >= 959:
                 self.current_area += 1
                 self.start_area_transition(self.current_area)
+        elif self.break_objective == BreakObjectives.game_won:
+            if not self.break_alerted:
+                self.alert_player('Victory!')
+                self.break_alerted = True
+            if self.break_timer.isover():
+                self.start_victory_transition()
         elif self.break_timer.isover():
             self.next_wave()
     
@@ -201,6 +220,9 @@ class Game:
             arrow_image = make_right_arrow(100, 30, 'Red')
             ui_sprite = UiSprite(arrow_image, arrow_image.get_rect(midright = (955, 270)), 0, 'next_area_arrow')
             core_object.main_ui.add(ui_sprite)
+        elif self.current_wave_num == 15:
+            if BaseZombie.active_elements: return
+            self.stop_waves(objective=BreakObjectives.game_won, break_time=3)
         else:
             self.next_wave()
     
@@ -208,6 +230,8 @@ class Game:
         self.break_timer.set_duration(break_duration)
         self.break_objective = break_objective
         self.state = self.STATES.normal
+        if self.player: 
+            if self.player.armor: self.player.armor.refill()
     
     def get_random_zombie_type(self) -> str:
         if not self.current_wave: return None
@@ -230,14 +254,39 @@ class Game:
 
         match ztype:
             case ZombieTypes.normal:
-                NormalZombie.spawn(spawn_pos, health=9, speed=3)
+                NormalZombie.spawn(spawn_pos, health=9, speed=3.5)
             
             case ZombieTypes.quick:
                 QuickZombie.spawn(spawn_pos, health=6, speed=5)
             
             case ZombieTypes.tank:
-                TankZombie.spawn(spawn_pos, health=20, speed=2)
+                TankZombie.spawn(spawn_pos, health=20, speed=3, damage=2)
+            
+            case ZombieTypes.ranged:
+                RangedZombie.spawn(spawn_pos, health=8, speed=1 + (self.current_area * 0.6))
+    
+    def on_enemy_death(self, enemy : 'BaseZombie'):
+        ztype = enemy.str_type
+        wave_mult : float =  1 + (self.current_wave_num - 1) * 0.5
+        base_value : int
+        match ztype:
+            case ZombieTypes.normal:
+                base_value = 1
 
+            case ZombieTypes.quick:
+                base_value = 3
+
+            case ZombieTypes.tank:
+                base_value = 2
+            
+            case ZombieTypes.ranged:
+                base_value = 3
+
+        self.score += floor(base_value * wave_mult)
+        self.update_score_sprite()
+
+    def update_score_sprite(self):
+        self.score_sprite.text = f'Score : {self.score}'
     
     def show_wave(self, wave_num : int):
         self.alert_player(f'Wave {wave_num}')
@@ -292,6 +341,19 @@ class Game:
         chain.register()
         chain.play()
         core_object.main_ui.add_temp(overlay, time + wait_time + 0.01, True, self.game_timer.get_time)
+    
+    def start_victory_transition(self):
+        self.state = self.STATES.transition
+        self.break_objective = None
+        time = 2
+        overlay : BrightnessOverlay = BrightnessOverlay(0, pygame.Rect(0,0, *core_object.main_display.get_size()), 0, 'fade_in_overlay', zindex=100)
+        overlay.brightness = 0
+        TInfo = TweenModule.TweenInfo
+        goal1 = {'brightness' : -255}
+        info1 = TInfo(interpolation.linear, time)
+        TweenModule.new_tween(overlay, info1, goal1, time_source=self.game_timer.get_time)
+        core_object.main_ui.add(overlay)
+        core_object.task_scheduler.schedule_task((time, self.game_timer.get_time, 1), self.fire_gameover_event, True)
         
     
     def pause(self):
@@ -321,11 +383,12 @@ class Game:
         self.prev_state = None
     
     
-    def fire_gameover_event(self):
-        new_event = pygame.event.Event(core_object.END_GAME, {})
+    def fire_gameover_event(self, victory : bool = False):
+        new_event = pygame.event.Event(core_object.END_GAME, {'victory' : victory})
         pygame.event.post(new_event)
     
     def do_gameover(self):
+        core_object.bg_manager.stop_all_music()
         track : AnimationTrack = Player.death_anim.load(self.player, self.game_timer.get_time)
         track.play(False, callback=Task(self.fire_gameover_event))
         self.state = self.STATES.transition
@@ -334,6 +397,7 @@ class Game:
         BaseZombie.class_cleanup()
         self.remove_connections()
         self.cleanup()
+        core_object.bg_manager.stop_all_music()
 
     def cleanup(self):
         #Cleanup basic variables
@@ -361,6 +425,7 @@ class Game:
         self.score = None
         self.wave_count = None
         self.current_area = None
+        self.score_sprite = None
 
    
     def init(self):
@@ -378,9 +443,9 @@ class Game:
         import game.player
         from game.player import Player
 
-        global BaseZombie, NormalZombie, ZombieTypes, QuickZombie, TankZombie
+        global BaseZombie, NormalZombie, ZombieTypes, QuickZombie, TankZombie, RangedZombie
         import game.enemy
-        from game.enemy import BaseZombie, NormalZombie, ZombieTypes, QuickZombie, TankZombie
+        from game.enemy import BaseZombie, NormalZombie, ZombieTypes, QuickZombie, TankZombie, RangedZombie
 
         global BaseProjectile
         import game.projectiles

@@ -73,7 +73,7 @@ class BaseProjectile(Sprite):
         element = cls.inactive_elements[0]
         cls.unpool(element)
 
-        element.image = cls.test_image if random.randint(0, 1) else cls.test_image2
+        element.image = cls.test_image
         element.mask = pygame.mask.from_surface(element.image)
         element.rect = element.image.get_rect()
 
@@ -130,11 +130,12 @@ class NormalProjectile(BaseProjectile):
         NormalProjectile.inactive_elements.append(self)
     
     @classmethod
-    def spawn(cls, pos: pygame.Vector2, speed: float, direction: pygame.Vector2, team: str = 'Friendly', damage: float | int = 1):
+    def spawn(cls, pos: pygame.Vector2, speed: float, direction: pygame.Vector2, team: str = 'Friendly', damage: float | int = 1, 
+              image : pygame.Surface|None = None):
         element = cls.inactive_elements[0]
         cls.unpool(element)
 
-        element.image = cls.test_image if random.randint(0, 1) else cls.test_image2
+        element.image = image or cls.test_image
         element.mask = pygame.mask.from_surface(element.image)
         element.rect = element.image.get_rect()
 
@@ -186,7 +187,7 @@ class PeirceProjectile(BaseProjectile):
         element = cls.inactive_elements[0]
         cls.unpool(element)
 
-        element.image = cls.test_image if random.randint(0, 1) else cls.test_image2
+        element.image = cls.test_image2
         element.mask = pygame.mask.from_surface(element.image)
         element.rect = element.image.get_rect()
 

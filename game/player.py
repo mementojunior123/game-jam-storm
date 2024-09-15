@@ -13,7 +13,8 @@ from utils.my_timer import Timer
 from dataclasses import dataclass
 from game.weapons import FiringModes, WeaponStats, WeaponBuff, WeaponBuffTypes, WEAPONS
 from game.weapons import BaseWeapon, ShotgunWeapon , PeirceWeapon
-
+from game.armor import ArmorBuff, ArmorBuffTypes, ArmorStats, ARMORS
+from game.armor import BaseArmor
 
 class Player(Sprite):
     active_elements : list['Player'] = []
@@ -32,6 +33,14 @@ class Player(Sprite):
 
     death_anim : Animation = Animation.get_animation("player_death")
     screen_transition : Animation = Animation.get_animation("player_screen_transition")
+    hit_sound = pygame.mixer.Sound('assets/audio/hit.ogg')
+    hit_sound.set_volume(0.15)
+
+    shot_sfx = pygame.mixer.Sound('assets/audio/shot.ogg')
+    shot_sfx.set_volume(0.10)
+
+    fast_shot_sfx = pygame.mixer.Sound('assets/audio/fast_shot.ogg')
+    fast_shot_sfx.set_volume(0.10)
 
     def __init__(self) -> None:
         super().__init__()
@@ -40,8 +49,9 @@ class Player(Sprite):
 
         self.main_heart : UiSprite|None = None
         self.ui_healthbar : UiSprite|None = None
-
+        self.armor_healthbar : UiSprite|None = None
         self.weapon : BaseWeapon
+        self.armor : BaseArmor|None
 
         self.dynamic_mask = True
         Player.inactive_elements.append(self)
@@ -72,10 +82,21 @@ class Player(Sprite):
         element.weapon.stats.apply_perma_buff(WeaponBuff(WeaponBuffTypes.dmg_mult, 0.2 * core_object.storage.damage_level))
         element.weapon.ready_shot_cooldown()
 
+        element.armor = ARMORS[core_object.storage.armor_equipped]
+        if element.armor:
+            element.armor.get_game_source()
+            element.armor.stats.reset()
+
         bar_image = make_upgrade_bar(150, 25, 1)
         element.ui_healthbar = UiSprite(bar_image, bar_image.get_rect(topright = (950, 20)), 0, 'healthbar')
         core_object.main_ui.add(element.ui_healthbar)
         element.update_healthbar()
+
+        if element.armor:
+            bar_image2 = make_upgrade_bar(150, 25, 1)
+            element.armor_healthbar = UiSprite(bar_image2, bar_image2.get_rect(topright = (950, element.ui_healthbar.rect.bottom + 10)), 0, 'a_healthbar')
+            core_object.main_ui.add(element.armor_healthbar)
+            element.update_armor_healthbar()
         element.main_heart = UiSprite(Player.ui_heart_image, Player.ui_heart_image.get_rect(topright = (793, 15)), 
                                       0, f'heart', colorkey=[0, 255, 0], zindex=1)
         #core_object.main_ui.add(element.main_heart)
@@ -86,6 +107,8 @@ class Player(Sprite):
         self.input_action()
         self.do_movement(delta)
         self.do_collisions()
+        if self.armor: self.armor.update(delta)
+        self.update_healthbars()
     
     def input_action(self):
         if (pygame.key.get_pressed())[pygame.K_SPACE] and (self.weapon.stats.fire_mode == FiringModes.auto):
@@ -94,7 +117,8 @@ class Player(Sprite):
     def do_movement(self, delta : float):
         keyboard_map = pygame.key.get_pressed()
         move_vector : pygame.Vector2 = pygame.Vector2(0,0)
-        speed : int = 7
+        speed : float = 7.0
+        if self.armor: speed *= self.armor.speed_pen
         if keyboard_map[pygame.K_a]:
             move_vector += pygame.Vector2(-1, 0)
         if keyboard_map[pygame.K_d]:
@@ -112,7 +136,14 @@ class Player(Sprite):
         for enemy in enemies:
             if not isinstance(enemy, BaseZombie): continue
             enemy.kill_instance_safe()
-            self.take_damage(1)
+            self.take_damage(enemy.damage)
+        
+        bullets : list[BaseProjectile] = self.get_all_colliding(BaseProjectile)
+        for bullet in bullets:
+            if not isinstance(bullet, BaseProjectile): continue
+            if not bullet.is_hostile('Friendly'): continue
+            self.take_damage(bullet.damage)
+            bullet.when_hit()
 
     
     def is_alive(self) -> bool:
@@ -123,10 +154,14 @@ class Player(Sprite):
 
     def take_damage(self, damage : int):
         if not self.can_take_damage(): return
-        self.hp -= damage
+        if self.armor:
+            self.hp -= self.armor.take_damage(damage)
+        else:
+            self.hp -= damage
         if self.hp < 0:
             self.hp = 0
-        self.update_healthbar()
+        core_object.bg_manager.play_sfx(self.hit_sound, 1)
+        self.update_healthbars()
     
     def shoot(self):
 
@@ -134,7 +169,10 @@ class Player(Sprite):
         shot_direction = player_to_mouse_vector.normalize()
         shot_origin = self.position
         if type(self.weapon) is BaseWeapon or type(self.weapon) is ShotgunWeapon or type(self.weapon) is PeirceWeapon:
-            self.weapon.shoot(shot_origin, shot_direction)
+            result = self.weapon.shoot(shot_origin, shot_direction)
+            if result:
+                core_object.bg_manager.play_sfx(self.shot_sfx if self.weapon.stats.firerate >= 0.14 else self.fast_shot_sfx, 1)
+
     
     def update_healthbar(self):
         hp_percent : float = self.hp / self.max_hp
@@ -144,6 +182,16 @@ class Player(Sprite):
                 break
         reset_upgrade_bar(self.ui_healthbar.surf, 1, 150, 25)
         pygame.draw.rect(self.ui_healthbar.surf, color, (3, 3, pygame.math.lerp(0, 150, hp_percent), 25))
+    
+    def update_healthbars(self):
+        self.update_healthbar()
+        if self.armor: self.update_armor_healthbar()
+    
+    def update_armor_healthbar(self): 
+        if not self.armor: return
+        reset_upgrade_bar(self.armor_healthbar.surf, 1, 150, 25)
+        armor_percent : float = self.armor.stats.health / self.armor.stats.max_health
+        pygame.draw.rect(self.armor_healthbar.surf, (26, 156, 217), (3, 3, pygame.math.lerp(0, 150, armor_percent), 25))
 
     
     def handle_key_event(self, event : pygame.Event):

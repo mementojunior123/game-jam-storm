@@ -292,7 +292,7 @@ class Sprite:
         for collision_group in collision_groups:
             actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
             for element in actual_group:
-                if self.is_colliding(element): return element     
+                if self.is_colliding(element) and not element._zombie: return element     
         return None
     
     def get_rect_colliding(self, collision_groups : list[list['Sprite']]):
@@ -304,7 +304,7 @@ class Sprite:
         for collision_group in collision_groups:
             actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
             for element in actual_group:
-                if self.is_collding_rect(element): return element
+                if self.is_collding_rect(element) and not element._zombie: return element
         return None
     
     def get_all_colliding(self, collision_groups : list[list['Sprite']]) -> list['Sprite']:
@@ -317,7 +317,7 @@ class Sprite:
         for collision_group in collision_groups:
             actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
             for element in actual_group:
-                if self.is_colliding(element):
+                if self.is_colliding(element) and not element._zombie:
                     return_val.append(element)
         return return_val
 
@@ -331,7 +331,7 @@ class Sprite:
         for collision_group in collision_groups:
             actual_group = collision_group.active_elements if isclass(collision_group) else collision_group
             for element in actual_group:
-                if self.is_collding_rect(element): return_val.append(element)
+                if self.is_collding_rect(element) and not element._zombie: return_val.append(element)
         return return_val
 
     def on_collision(self, other : 'Sprite'):
