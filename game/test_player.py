@@ -71,12 +71,8 @@ class TestPlayer(Sprite):
         self.clamp_rect(pygame.Rect(0,0, *core_object.main_display.get_size()))
     
     def clean_instance(self):
-        self.image = None
+        super().clean_instance()
         self.color_images = None
         self.color_image_list = None
-        self.rect = None
-        self.pivot = None
-        self._position = pygame.Vector2(0,0)
-        self.zindex = None
 
 Sprite.register_class(TestPlayer)
